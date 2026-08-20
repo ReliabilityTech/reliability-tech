@@ -1,0 +1,37 @@
+name: Propor uma funcionalidade
+description: Sugerir algo novo ou uma melhoria
+labels: ['enhancement']
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema isto resolve
+      description: Descreva a necessidade, não a solução.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+    validations:
+      required: true
+
+  - type: input
+    id: requisito
+    attributes:
+      label: Requisito relacionado
+      description: Código em docs/requisitos/, se houver (ex.- RF-012).
+
+  - type: textarea
+    id: aceite
+    attributes:
+      label: Critérios de aceite
+      value: |
+        - [ ] Dado ..., quando ..., então ...
+
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: Prioridade (MoSCoW)
+      options: [Must, Should, Could, "Won't"]

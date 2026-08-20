@@ -1,0 +1,37 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Testes / cobertura
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editores / SO
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal

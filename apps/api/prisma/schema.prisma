@@ -1,0 +1,61 @@
+// Schema do banco do Arbora.
+//
+// ATENÇÃO: apenas o núcleo de identidade está modelado. As entidades de
+// domínio serão adicionadas quando os requisitos funcionais forem
+// consolidados em docs/requisitos/funcionais.md.
+// Ver docs/adr/0003-persistencia-postgres-prisma.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  GESTOR
+  TECNICO
+  LEITOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(180)
+  passwordHash String
+  role         UserRole @default(LEITOR)
+  isActive     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Exclusão lógica: histórico é requisito de auditoria em sistemas de
+  // confiabilidade, então registros não são removidos fisicamente.
+  deletedAt DateTime?
+
+  auditLogs AuditLog[]
+
+  @@index([deletedAt])
+  @@map("users")
+}
+
+/// Trilha de auditoria — quem fez o quê e quando.
+model AuditLog {
+  id       String   @id @default(cuid())
+  action   String   @db.VarChar(80)
+  entity   String   @db.VarChar(80)
+  entityId String?
+  metadata Json?
+  ip       String?  @db.VarChar(45)
+
+  userId String?
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

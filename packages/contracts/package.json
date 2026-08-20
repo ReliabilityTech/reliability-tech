@@ -1,0 +1,30 @@
+{
+  "name": "@arbora/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contratos (schemas Zod + tipos) compartilhados entre a API e o Web",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "clean": "rm -rf dist .turbo",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@arbora/eslint-config": "workspace:*",
+    "@arbora/tsconfig": "workspace:*",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

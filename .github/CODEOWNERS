@@ -1,0 +1,8 @@
+# Revisão obrigatória por padrão. Ajuste conforme o time crescer.
+*   @VictorTavaresRafael
+
+# Mudanças estruturais merecem atenção redobrada.
+/docs/adr/            @VictorTavaresRafael
+/packages/contracts/  @VictorTavaresRafael
+/apps/api/prisma/     @VictorTavaresRafael
+/.github/             @VictorTavaresRafael

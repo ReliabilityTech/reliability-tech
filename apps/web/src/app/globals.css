@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens do Arbora.
+ *
+ * PROVISÓRIO: a paleta e a tipografia abaixo são um ponto de partida coerente
+ * com o nome do produto (arbor → verde) e ainda NÃO foram extraídas do
+ * protótipo do Stitch. Ao sincronizar com o protótipo, altere apenas os valores
+ * deste bloco — nenhum componente usa cor literal.
+ * Ver docs/design-system.md.
+ */
+@theme {
+  --color-brand-50: oklch(0.97 0.02 150);
+  --color-brand-100: oklch(0.94 0.04 150);
+  --color-brand-200: oklch(0.88 0.07 150);
+  --color-brand-300: oklch(0.8 0.11 150);
+  --color-brand-400: oklch(0.71 0.14 150);
+  --color-brand-500: oklch(0.62 0.15 150);
+  --color-brand-600: oklch(0.53 0.13 150);
+  --color-brand-700: oklch(0.44 0.11 150);
+  --color-brand-800: oklch(0.36 0.08 150);
+  --color-brand-900: oklch(0.28 0.06 150);
+
+  /* Cores semânticas de estado — usadas por alertas e indicadores. */
+  --color-success: oklch(0.62 0.15 150);
+  --color-warning: oklch(0.75 0.15 75);
+  --color-danger: oklch(0.58 0.2 25);
+  --color-info: oklch(0.62 0.13 250);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+
+  --radius-card: 0.75rem;
+}
+
+/* Papéis de cor da interface. Trocar de tema = trocar estas variáveis. */
+:root {
+  --color-surface: oklch(1 0 0);
+  --color-surface-muted: oklch(0.97 0.005 150);
+  --color-foreground: oklch(0.22 0.02 150);
+  --color-foreground-muted: oklch(0.5 0.02 150);
+  --color-border: oklch(0.9 0.01 150);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: oklch(0.19 0.02 150);
+    --color-surface-muted: oklch(0.24 0.02 150);
+    --color-foreground: oklch(0.96 0.01 150);
+    --color-foreground-muted: oklch(0.72 0.02 150);
+    --color-border: oklch(0.32 0.02 150);
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Foco sempre visível — requisito de acessibilidade (WCAG 2.4.7). */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+}

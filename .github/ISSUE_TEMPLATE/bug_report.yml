@@ -1,0 +1,50 @@
+name: Reportar um defeito
+description: Algo não funciona como deveria
+labels: ['bug']
+body:
+  - type: textarea
+    id: descricao
+    attributes:
+      label: O que acontece
+      description: Descreva o comportamento observado.
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que deveria acontecer
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducao
+    attributes:
+      label: Como reproduzir
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Onde ocorre
+      options: [web, api, contracts, infraestrutura, não sei]
+    validations:
+      required: true
+
+  - type: textarea
+    id: ambiente
+    attributes:
+      label: Ambiente
+      description: Navegador, sistema operacional, ambiente (local/staging/produção), commit.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs ou capturas
+      description: Cole logs relevantes. **Remova tokens, senhas e dados pessoais.**
+      render: shell
