@@ -3,11 +3,16 @@ import { z } from 'zod';
 import { emailSchema, idSchema, isoDateTimeSchema } from './common/primitives';
 
 /**
- * Baseline de autenticação. Os papéis abaixo são uma hipótese de trabalho
- * (ver docs/adr/0004-autenticacao-e-papeis.md) e devem ser revisados assim que
- * os requisitos funcionais de perfis de acesso forem consolidados.
+ * Papéis confirmados por RF-001 (ver docs/adr/0004-autenticacao-e-papeis.md).
+ * `super_admin` não pertence a tenant nenhum; os demais são escopados por tenant.
  */
-export const userRoleSchema = z.enum(['admin', 'gestor', 'tecnico', 'leitor']);
+export const userRoleSchema = z.enum([
+  'super_admin',
+  'admin_escolar',
+  'coordenacao',
+  'professor',
+  'responsavel',
+]);
 export type UserRole = z.infer<typeof userRoleSchema>;
 
 export const passwordSchema = z
@@ -23,6 +28,8 @@ export const userSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: emailSchema,
   role: userRoleSchema,
+  /** Nulo apenas para `super_admin` (RF-008), que opera fora de qualquer tenant. */
+  tenantId: idSchema.nullable(),
   createdAt: isoDateTimeSchema,
 });
 
