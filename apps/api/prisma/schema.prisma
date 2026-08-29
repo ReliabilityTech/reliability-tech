@@ -101,10 +101,28 @@ model User {
   conversasComoResponsavel Conversa[]                 @relation("ResponsavelConversa")
   conversasComoStaff       Conversa[]                 @relation("StaffConversa")
   mensagensEnviadas        Mensagem[]
+  refreshTokens            RefreshToken[]
 
   @@index([tenantId])
   @@index([deletedAt])
   @@map("users")
+}
+
+/// Refresh token de sessão (RF-002). Guardamos o hash, nunca o valor bruto —
+/// o mesmo princípio de `passwordHash`. Rotação: cada uso revoga o token atual
+/// e emite um novo (ver AuthService.refresh).
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 /// Trilha de auditoria — quem fez o quê e quando (RF-029, RNF-004).

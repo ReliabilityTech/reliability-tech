@@ -6,6 +6,8 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AuthModule } from './auth/auth.module';
+import { AuditModule } from './common/audit/audit.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { type Env, validateEnv } from './config/env';
 import { HealthModule } from './health/health.module';
@@ -58,6 +60,8 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
 
     PrismaModule,
+    AuditModule,
+    AuthModule,
     HealthModule,
   ],
   providers: [

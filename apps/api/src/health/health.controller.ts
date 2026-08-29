@@ -3,11 +3,14 @@ import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 
+import { Public } from '../auth/decorators/public.decorator';
 import { HealthService } from './health.service';
 
+/** Sem sessão: orquestrador e monitoramento externo batem aqui sem autenticar. */
 @ApiTags('health')
 @Controller('health')
 @SkipThrottle()
+@Public()
 export class HealthController {
   constructor(private readonly health: HealthService) {}
 

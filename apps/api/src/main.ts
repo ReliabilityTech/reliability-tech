@@ -4,6 +4,7 @@ import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
@@ -19,6 +20,7 @@ async function bootstrap(): Promise<void> {
   const prefix = config.get('API_PREFIX', { infer: true });
 
   app.use(helmet());
+  app.use(cookieParser());
   app.enableCors({
     origin: parseCorsOrigins(config.get('CORS_ORIGINS', { infer: true })),
     credentials: true,

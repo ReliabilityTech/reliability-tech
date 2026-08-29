@@ -17,7 +17,9 @@ export const envSchema = z.object({
 
   /** Segredo de assinatura dos tokens de sessão. Nunca versionar o valor real. */
   JWT_SECRET: z.string().min(32, 'JWT_SECRET deve ter ao menos 32 caracteres'),
-  JWT_EXPIRES_IN: z.string().default('1h'),
+  /** Vida curta por design (ADR 0004) — a sessão longa vive no refresh token. */
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
   /** Janela e limite do rate limit global (RNF de segurança). */
   RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),

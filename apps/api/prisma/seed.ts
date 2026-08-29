@@ -1,15 +1,10 @@
-import { createHash } from 'node:crypto';
-
 import { PeriodoTipo, PresencaStatus, PrismaClient, UserRole } from '@prisma/client';
+import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
-/**
- * Placeholder de hash. Substituir por argon2/bcrypt junto com a implementação
- * real de autenticação (ver docs/adr/0004-autenticacao-e-papeis.md).
- */
-function hashPlaceholder(senha: string): string {
-  return `seed$${createHash('sha256').update(senha).digest('hex')}`;
+function hashSenha(senha: string): Promise<string> {
+  return argon2.hash(senha, { type: argon2.argon2id });
 }
 
 async function main(): Promise<void> {
@@ -17,13 +12,15 @@ async function main(): Promise<void> {
     throw new Error('O seed não deve ser executado em produção.');
   }
 
+  const passwordHash = await hashSenha('ArboraDev2026');
+
   const superAdmin = await prisma.user.upsert({
     where: { email: 'superadmin@arbora.local' },
-    update: {},
+    update: { passwordHash },
     create: {
       name: 'Super Admin Arbora',
       email: 'superadmin@arbora.local',
-      passwordHash: hashPlaceholder('ArboraDev2026'),
+      passwordHash,
       role: UserRole.SUPER_ADMIN,
     },
   });
@@ -40,11 +37,11 @@ async function main(): Promise<void> {
 
   const adminEscolar = await prisma.user.upsert({
     where: { email: 'admin@colegio-arbora.local' },
-    update: {},
+    update: { passwordHash },
     create: {
       name: 'Diretora Marta Souza',
       email: 'admin@colegio-arbora.local',
-      passwordHash: hashPlaceholder('ArboraDev2026'),
+      passwordHash,
       role: UserRole.ADMIN_ESCOLAR,
       tenantId: escola.id,
     },
@@ -52,11 +49,11 @@ async function main(): Promise<void> {
 
   const professor = await prisma.user.upsert({
     where: { email: 'professor@colegio-arbora.local' },
-    update: {},
+    update: { passwordHash },
     create: {
       name: 'Professor João Lima',
       email: 'professor@colegio-arbora.local',
-      passwordHash: hashPlaceholder('ArboraDev2026'),
+      passwordHash,
       role: UserRole.PROFESSOR,
       tenantId: escola.id,
     },
@@ -64,11 +61,11 @@ async function main(): Promise<void> {
 
   const responsavel = await prisma.user.upsert({
     where: { email: 'responsavel@colegio-arbora.local' },
-    update: {},
+    update: { passwordHash },
     create: {
       name: 'Ana Pereira',
       email: 'responsavel@colegio-arbora.local',
-      passwordHash: hashPlaceholder('ArboraDev2026'),
+      passwordHash,
       role: UserRole.RESPONSAVEL,
       tenantId: escola.id,
     },
