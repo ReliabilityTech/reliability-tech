@@ -58,7 +58,11 @@ describe('AuthService', () => {
       const { service, prisma } = await criarServico();
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({ ...usuarioBase, tenant: null });
 
-      const { tokens, user } = await service.login('ana@colegio-arbora.local', 'SenhaForte2026');
+      const { tokens, user } = await service.login(
+        'ana@colegio-arbora.local',
+        'SenhaForte2026',
+        false,
+      );
 
       expect(tokens.accessToken).toBe('access-token-fake');
       expect(tokens.refreshToken).toEqual(expect.any(String));
@@ -66,13 +70,25 @@ describe('AuthService', () => {
       expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
     });
 
+    it('propaga rememberMe para o RefreshToken criado', async () => {
+      const { service, prisma } = await criarServico();
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue({ ...usuarioBase, tenant: null });
+
+      const { tokens } = await service.login(usuarioBase.email, 'SenhaForte2026', true);
+
+      expect(tokens.rememberMe).toBe(true);
+      expect(prisma.refreshToken.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ rememberMe: true }) }),
+      );
+    });
+
     it('rejeita quando o usuário não existe', async () => {
       const { service, prisma } = await criarServico();
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.login('inexistente@colegio-arbora.local', 'x')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.login('inexistente@colegio-arbora.local', 'x', false),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('rejeita quando o usuário está inativo', async () => {
@@ -83,7 +99,7 @@ describe('AuthService', () => {
         tenant: null,
       });
 
-      await expect(service.login(usuarioBase.email, 'x')).rejects.toBeInstanceOf(
+      await expect(service.login(usuarioBase.email, 'x', false)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
@@ -95,7 +111,7 @@ describe('AuthService', () => {
         tenant: { status: 'SUSPENSO' },
       });
 
-      await expect(service.login(usuarioBase.email, 'x')).rejects.toBeInstanceOf(
+      await expect(service.login(usuarioBase.email, 'x', false)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
@@ -106,7 +122,7 @@ describe('AuthService', () => {
       });
       (prisma.user.findUnique as jest.Mock).mockResolvedValue({ ...usuarioBase, tenant: null });
 
-      await expect(service.login(usuarioBase.email, 'errada')).rejects.toBeInstanceOf(
+      await expect(service.login(usuarioBase.email, 'errada', false)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
     });
@@ -119,10 +135,13 @@ describe('AuthService', () => {
         id: 'rt-1',
         revokedAt: null,
         expiresAt: new Date(Date.now() + 60_000),
+        rememberMe: true,
         user: usuarioBase,
       });
 
-      await service.refresh('token-bruto-valido');
+      const { tokens } = await service.refresh('token-bruto-valido');
+
+      expect(tokens.rememberMe).toBe(true);
 
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
         where: { id: 'rt-1' },

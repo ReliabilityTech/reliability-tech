@@ -15,6 +15,7 @@ export type IssuedTokens = {
   accessToken: string;
   refreshToken: string;
   refreshTokenExpiresAt: Date;
+  rememberMe: boolean;
 };
 
 const REFRESH_TOKEN_BYTES = 48;
@@ -28,7 +29,11 @@ export class AuthService {
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  async login(email: string, senha: string): Promise<{ tokens: IssuedTokens; user: User }> {
+  async login(
+    email: string,
+    senha: string,
+    rememberMe: boolean,
+  ): Promise<{ tokens: IssuedTokens; user: User }> {
     const user = await this.prisma.user.findUnique({ where: { email }, include: { tenant: true } });
     const credenciaisInvalidas = () => new UnauthorizedException('E-mail ou senha inválidos');
 
@@ -42,7 +47,7 @@ export class AuthService {
       throw credenciaisInvalidas();
     }
 
-    const tokens = await this.issueTokens(user);
+    const tokens = await this.issueTokens(user, rememberMe);
     return { tokens, user };
   }
 
@@ -68,7 +73,7 @@ export class AuthService {
       data: { revokedAt: new Date() },
     });
 
-    const tokens = await this.issueTokens(stored.user);
+    const tokens = await this.issueTokens(stored.user, stored.rememberMe);
     return { tokens, user: stored.user };
   }
 
@@ -108,7 +113,7 @@ export class AuthService {
     };
   }
 
-  private async issueTokens(user: User): Promise<IssuedTokens> {
+  private async issueTokens(user: User, rememberMe: boolean): Promise<IssuedTokens> {
     const payload: AccessTokenPayload = {
       sub: user.id,
       tenantId: user.tenantId,
@@ -127,10 +132,11 @@ export class AuthService {
         userId: user.id,
         tokenHash: this.hashToken(refreshToken),
         expiresAt: refreshTokenExpiresAt,
+        rememberMe,
       },
     });
 
-    return { accessToken, refreshToken, refreshTokenExpiresAt };
+    return { accessToken, refreshToken, refreshTokenExpiresAt, rememberMe };
   }
 
   private hashToken(token: string): string {

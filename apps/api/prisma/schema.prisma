@@ -118,6 +118,9 @@ model RefreshToken {
   tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
+  /// "Lembrar de mim" no login — decide se o cookie de refresh é persistente
+  /// ou de sessão (AuthController). Preservado na rotação (ver AuthService.refresh).
+  rememberMe Boolean  @default(false)
 
   createdAt DateTime @default(now())
 

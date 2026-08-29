@@ -38,10 +38,15 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica com e-mail e senha, abre sessão em cookies httpOnly' })
   async login(
-    @Body(new ZodValidationPipe(loginRequestSchema)) body: { email: string; password: string },
+    @Body(new ZodValidationPipe(loginRequestSchema))
+    body: { email: string; password: string; rememberMe: boolean },
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
-    const { tokens, user } = await this.authService.login(body.email, body.password);
+    const { tokens, user } = await this.authService.login(
+      body.email,
+      body.password,
+      body.rememberMe,
+    );
     this.setSessionCookies(res, tokens);
     return this.authService.toSession(user);
   }
@@ -101,7 +106,9 @@ export class AuthController {
       secure,
       sameSite: 'lax',
       path: '/',
-      expires: tokens.refreshTokenExpiresAt,
+      // Sem "lembrar de mim": cookie de sessão, some ao fechar o navegador —
+      // mesmo que o RefreshToken no banco continue válido por mais tempo.
+      ...(tokens.rememberMe ? { expires: tokens.refreshTokenExpiresAt } : {}),
     });
   }
 
