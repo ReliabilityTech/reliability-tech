@@ -4,14 +4,16 @@ import { emailSchema, idSchema, isoDateTimeSchema } from './common/primitives';
 
 /**
  * Papéis confirmados por RF-001 (ver docs/adr/0004-autenticacao-e-papeis.md).
- * `super_admin` não pertence a tenant nenhum; os demais são escopados por tenant.
+ * Valores espelham o enum `UserRole` do Prisma — mesma convenção dos demais
+ * enums do domínio em `@arbora/contracts`. `SUPER_ADMIN` não pertence a
+ * tenant nenhum; os demais são escopados por tenant.
  */
 export const userRoleSchema = z.enum([
-  'super_admin',
-  'admin_escolar',
-  'coordenacao',
-  'professor',
-  'responsavel',
+  'SUPER_ADMIN',
+  'ADMIN_ESCOLAR',
+  'COORDENACAO',
+  'PROFESSOR',
+  'RESPONSAVEL',
 ]);
 export type UserRole = z.infer<typeof userRoleSchema>;
 
@@ -28,7 +30,7 @@ export const userSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: emailSchema,
   role: userRoleSchema,
-  /** Nulo apenas para `super_admin` (RF-008), que opera fora de qualquer tenant. */
+  /** Nulo apenas para `SUPER_ADMIN` (RF-008), que opera fora de qualquer tenant. */
   tenantId: idSchema.nullable(),
   createdAt: isoDateTimeSchema,
 });
@@ -50,9 +52,12 @@ export const registerRequestSchema = z.object({
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
+/**
+ * Resposta de login/refresh/`/auth/me`. Os tokens em si nunca trafegam no
+ * corpo — vão em cookies httpOnly (ver AuthController), para reduzir a
+ * superfície de roubo de token via XSS.
+ */
 export const authSessionSchema = z.object({
-  accessToken: z.string().min(1),
-  expiresAt: isoDateTimeSchema,
   user: userSchema,
 });
 

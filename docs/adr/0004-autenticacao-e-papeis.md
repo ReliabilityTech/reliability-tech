@@ -20,11 +20,11 @@ hipótese original.
 
    | Papel | Escopo | Permissão (RF relacionado) |
    | ----- | ------ | --------------------------- |
-   | `super_admin` | Global, fora do tenant | Gerencia tenants: cria, ativa, suspende, gerencia planos (RF-007, RF-008) |
-   | `admin_escolar` | Tenant | Administra usuários, configuração da escola, gera relatórios (RF-028) |
-   | `coordenacao` | Tenant | Cadastra alunos/turmas/disciplinas/professores (RF-009), eventos (RF-025), ocorrências (RF-022), recados (RF-015) |
-   | `professor` | Tenant, escopo de suas turmas | Lança notas (RF-010) e presença/falta (RF-012) |
-   | `responsavel` | Tenant, escopo dos alunos vinculados | Somente leitura de boletim (RF-011), frequência, recados, agenda; confirma ciência de recados (RF-016); autoriza retirada por terceiros (RF-023) |
+   | `SUPER_ADMIN` | Global, fora do tenant | Gerencia tenants: cria, ativa, suspende, gerencia planos (RF-007, RF-008) |
+   | `ADMIN_ESCOLAR` | Tenant | Administra usuários, configuração da escola, gera relatórios (RF-028) |
+   | `COORDENACAO` | Tenant | Cadastra alunos/turmas/disciplinas/professores (RF-009), eventos (RF-025), ocorrências (RF-022), recados (RF-015) |
+   | `PROFESSOR` | Tenant, escopo de suas turmas | Lança notas (RF-010) e presença/falta (RF-012) |
+   | `RESPONSAVEL` | Tenant, escopo dos alunos vinculados | Somente leitura de boletim (RF-011), frequência, recados, agenda; confirma ciência de recados (RF-016); autoriza retirada por terceiros (RF-023) |
 
    Este mapeamento substitui a hipótese original (`admin`/`gestor`/`tecnico`/`leitor`), que não
    correspondia aos perfis reais do produto.
