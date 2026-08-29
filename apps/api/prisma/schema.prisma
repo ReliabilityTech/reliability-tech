@@ -1,9 +1,12 @@
 // Schema do banco do Arbora.
 //
-// ATENÇÃO: apenas o núcleo de identidade está modelado. As entidades de
-// domínio serão adicionadas quando os requisitos funcionais forem
-// consolidados em docs/requisitos/funcionais.md.
-// Ver docs/adr/0003-persistencia-postgres-prisma.md.
+// Domínio modelado a partir de docs/requisitos/funcionais.md (RF-001 a RF-029) e das decisões em
+// docs/adr/0004-autenticacao-e-papeis.md (papéis) e docs/adr/0006-estrategia-multi-tenancy.md
+// (isolamento por tenant_id em banco compartilhado).
+//
+// Toda tabela que guarda dado de uma escola tem `tenantId` obrigatório e indexado — é a camada
+// de aplicação que garante o filtro (ADR 0006); RLS no Postgres é a segunda camada, ainda não
+// configurada (ver docs/roadmap.md).
 
 generator client {
   provider = "prisma-client-js"
@@ -14,11 +17,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Identidade e tenants
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  ATIVO
+  SUSPENSO
+}
+
+/// Uma instituição de ensino (RF-006 a RF-008). Isolamento de dados entre tenants
+/// é a garantia mais crítica do produto — ver ADR 0006.
+model Tenant {
+  id     String       @id @default(cuid())
+  nome   String       @db.VarChar(160)
+  /// Identificador curto e estável usado em URLs/subdomínio.
+  slug   String       @unique @db.VarChar(80)
+  status TenantStatus @default(ATIVO)
+  /// Plano contratado (RF-008). String livre por ora — vira enum quando os planos forem definidos.
+  plano  String       @db.VarChar(40)
+
+  // Identidade visual (RF-007).
+  logoUrl     String? @db.VarChar(500)
+  corPrimaria String? @db.VarChar(7)
+
+  /// Habilita o canal de mensagens diretas responsável↔escola (RF-019, opcional por instituição).
+  mensagensDiretasHabilitadas Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios        User[]
+  turmas          Turma[]
+  disciplinas     Disciplina[]
+  periodosLetivos PeriodoLetivo[]
+  alunos          Aluno[]
+  recados         Recado[]
+  eventos         Evento[]
+  notificacoes    Notificacao[]
+  conversas       Conversa[]
+  auditLogs       AuditLog[]
+
+  @@map("tenants")
+}
+
 enum UserRole {
-  ADMIN
-  GESTOR
-  TECNICO
-  LEITOR
+  SUPER_ADMIN
+  ADMIN_ESCOLAR
+  COORDENACAO
+  PROFESSOR
+  RESPONSAVEL
 }
 
 model User {
@@ -26,36 +74,515 @@ model User {
   name         String   @db.VarChar(120)
   email        String   @unique @db.VarChar(180)
   passwordHash String
-  role         UserRole @default(LEITOR)
+  role         UserRole @default(RESPONSAVEL)
   isActive     Boolean  @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  /// Nulo apenas para SUPER_ADMIN (RF-008), que opera fora de qualquer tenant.
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   // Exclusão lógica: histórico é requisito de auditoria em sistemas de
   // confiabilidade, então registros não são removidos fisicamente.
   deletedAt DateTime?
 
-  auditLogs AuditLog[]
+  auditLogs                AuditLog[]
+  turmasLecionadas         TurmaDisciplina[]          @relation("ProfessorTurmaDisciplina")
+  alunosResponsavel        AlunoResponsavel[]
+  terceirosAutorizados     TerceiroAutorizado[]       @relation("ResponsavelCadastrouTerceiro")
+  movimentacoesRegistradas Movimentacao[]             @relation("StaffRegistrouMovimentacao")
+  ocorrenciasRegistradas   Ocorrencia[]               @relation("StaffRegistrouOcorrencia")
+  recadosPublicados        Recado[]                   @relation("AutorRecado")
+  confirmacoesLeitura      RecadoConfirmacaoLeitura[]
+  notasLancadas            Nota[]                     @relation("ProfessorLancouNota")
+  presencasRegistradas     Presenca[]                 @relation("StaffRegistrouPresenca")
+  notificacoesRecebidas    Notificacao[]
+  conversasComoResponsavel Conversa[]                 @relation("ResponsavelConversa")
+  conversasComoStaff       Conversa[]                 @relation("StaffConversa")
+  mensagensEnviadas        Mensagem[]
 
+  @@index([tenantId])
   @@index([deletedAt])
   @@map("users")
 }
 
-/// Trilha de auditoria — quem fez o quê e quando.
+/// Trilha de auditoria — quem fez o quê e quando (RF-029, RNF-004).
 model AuditLog {
-  id       String   @id @default(cuid())
-  action   String   @db.VarChar(80)
-  entity   String   @db.VarChar(80)
+  id       String  @id @default(cuid())
+  action   String  @db.VarChar(80)
+  entity   String  @db.VarChar(80)
   entityId String?
   metadata Json?
-  ip       String?  @db.VarChar(45)
+  ip       String? @db.VarChar(45)
+
+  /// Nulo para ações do super-admin, que não pertencem a um tenant.
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   userId String?
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
+  @@index([tenantId, createdAt])
   @@index([entity, entityId])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Gestão acadêmica (RF-009 a RF-014)
+// ---------------------------------------------------------------------------
+
+model Turma {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  nome      String @db.VarChar(80)
+  serie     String @db.VarChar(80)
+  anoLetivo Int
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  alunos           Aluno[]
+  turmaDisciplinas TurmaDisciplina[]
+  recados          Recado[]
+  eventos          Evento[]
+
+  @@unique([tenantId, nome, anoLetivo])
+  @@index([tenantId, anoLetivo])
+  @@map("turmas")
+}
+
+model Disciplina {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  nome     String @db.VarChar(120)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  turmaDisciplinas TurmaDisciplina[]
+
+  @@unique([tenantId, nome])
+  @@map("disciplinas")
+}
+
+/// Liga uma disciplina a uma turma e ao professor responsável — é o ponto de
+/// referência para lançamento de notas e presença (RF-010, RF-012).
+model TurmaDisciplina {
+  id           String     @id @default(cuid())
+  turmaId      String
+  turma        Turma      @relation(fields: [turmaId], references: [id], onDelete: Restrict)
+  disciplinaId String
+  disciplina   Disciplina @relation(fields: [disciplinaId], references: [id], onDelete: Restrict)
+  professorId  String
+  professor    User       @relation("ProfessorTurmaDisciplina", fields: [professorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notas     Nota[]
+  presencas Presenca[]
+
+  @@unique([turmaId, disciplinaId])
+  @@index([professorId])
+  @@map("turma_disciplinas")
+}
+
+enum PeriodoTipo {
+  BIMESTRE
+  TRIMESTRE
+}
+
+/// Bimestre ou trimestre de um ano letivo (RF-010: "notas por disciplina/bimestre/trimestre").
+model PeriodoLetivo {
+  id         String      @id @default(cuid())
+  tenantId   String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  anoLetivo  Int
+  tipo       PeriodoTipo
+  numero     Int
+  dataInicio DateTime
+  dataFim    DateTime
+
+  createdAt DateTime @default(now())
+
+  notas Nota[]
+
+  @@unique([tenantId, anoLetivo, tipo, numero])
+  @@map("periodos_letivos")
+}
+
+enum AlunoStatus {
+  ATIVO
+  INATIVO
+}
+
+model Aluno {
+  id             String      @id @default(cuid())
+  tenantId       String
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  nome           String      @db.VarChar(160)
+  dataNascimento DateTime
+  /// Não tem User/login próprio — apenas responsáveis, professores e staff autenticam (RF-001).
+  matricula      String      @db.VarChar(40)
+  status         AlunoStatus @default(ATIVO)
+
+  turmaId String?
+  turma   Turma?  @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  responsaveis         AlunoResponsavel[]
+  notas                Nota[]
+  presencas            Presenca[]
+  terceirosAutorizados TerceiroAutorizado[]
+  movimentacoes        Movimentacao[]
+  ocorrencias          Ocorrencia[]
+  recados              Recado[]
+
+  @@unique([tenantId, matricula])
+  @@index([tenantId, turmaId])
+  @@map("alunos")
+}
+
+/// N:N — um aluno pode ter vários responsáveis e vice-versa (RF-004); o acesso do
+/// responsável é restrito aos alunos vinculados aqui (RF-005).
+model AlunoResponsavel {
+  id            String  @id @default(cuid())
+  alunoId       String
+  aluno         Aluno   @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  responsavelId String
+  responsavel   User    @relation(fields: [responsavelId], references: [id], onDelete: Restrict)
+  parentesco    String  @db.VarChar(40)
+  /// Autorização prévia de retirada do próprio responsável (RF-023) — distinta de TerceiroAutorizado.
+  podeRetirar   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([alunoId, responsavelId])
+  @@index([responsavelId])
+  @@map("aluno_responsaveis")
+}
+
+model Nota {
+  id                String          @id @default(cuid())
+  alunoId           String
+  aluno             Aluno           @relation(fields: [alunoId], references: [id], onDelete: Restrict)
+  turmaDisciplinaId String
+  turmaDisciplina   TurmaDisciplina @relation(fields: [turmaDisciplinaId], references: [id], onDelete: Restrict)
+  periodoLetivoId   String
+  periodoLetivo     PeriodoLetivo   @relation(fields: [periodoLetivoId], references: [id], onDelete: Restrict)
+  /// Escala 0–10 com 2 casas decimais; ajustar se a escala real divergir por instituição.
+  valor             Decimal         @db.Decimal(4, 2)
+
+  lancadoPorId String
+  lancadoPor   User   @relation("ProfessorLancouNota", fields: [lancadoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([alunoId, turmaDisciplinaId, periodoLetivoId])
+  @@index([turmaDisciplinaId])
+  @@map("notas")
+}
+
+enum PresencaStatus {
+  PRESENTE
+  FALTA
+}
+
+/// Presença por aula (turmaDisciplinaId preenchido) ou por dia letivo inteiro
+/// (turmaDisciplinaId nulo) — RF-012 aceita os dois modos.
+///
+/// Atenção: o Postgres trata NULL como distinto em índice único, então o par
+/// (alunoId, data) com turmaDisciplinaId nulo NÃO é protegido contra duplicidade
+/// só pelo schema — a camada de aplicação precisa impedir duas faltas "gerais do
+/// dia" para o mesmo aluno na mesma data.
+model Presenca {
+  id      String         @id @default(cuid())
+  alunoId String
+  aluno   Aluno          @relation(fields: [alunoId], references: [id], onDelete: Restrict)
+  data    DateTime       @db.Date
+  status  PresencaStatus
+
+  turmaDisciplinaId String?
+  turmaDisciplina   TurmaDisciplina? @relation(fields: [turmaDisciplinaId], references: [id], onDelete: Restrict)
+
+  registradoPorId String
+  registradoPor   User   @relation("StaffRegistrouPresenca", fields: [registradoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@unique([alunoId, data, turmaDisciplinaId])
+  @@index([turmaDisciplinaId, data])
+  @@map("presencas")
+}
+
+// ---------------------------------------------------------------------------
+// Movimentações do aluno (RF-020 a RF-023)
+// ---------------------------------------------------------------------------
+
+/// Pessoa pré-autorizada por um responsável a retirar o aluno (RF-023),
+/// distinta de um responsável cadastrado (AlunoResponsavel).
+model TerceiroAutorizado {
+  id                  String @id @default(cuid())
+  alunoId             String
+  aluno               Aluno  @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  nome                String @db.VarChar(160)
+  documento           String @db.VarChar(20)
+  parentescoOuRelacao String @db.VarChar(40)
+
+  cadastradoPorId String
+  cadastradoPor   User   @relation("ResponsavelCadastrouTerceiro", fields: [cadastradoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  movimentacoes Movimentacao[]
+
+  @@index([alunoId])
+  @@map("terceiros_autorizados")
+}
+
+enum MovimentacaoTipo {
+  ENTRADA
+  SAIDA
+}
+
+model Movimentacao {
+  id         String           @id @default(cuid())
+  alunoId    String
+  aluno      Aluno            @relation(fields: [alunoId], references: [id], onDelete: Restrict)
+  tipo       MovimentacaoTipo
+  dataHora   DateTime         @default(now())
+  observacao String?          @db.VarChar(280)
+
+  /// Preenchido quando a saída foi feita por um terceiro autorizado (RF-021).
+  retiradoPorTerceiroId String?
+  retiradoPorTerceiro   TerceiroAutorizado? @relation(fields: [retiradoPorTerceiroId], references: [id], onDelete: SetNull)
+
+  registradoPorId String
+  registradoPor   User   @relation("StaffRegistrouMovimentacao", fields: [registradoPorId], references: [id], onDelete: Restrict)
+
+  @@index([alunoId, dataHora])
+  @@map("movimentacoes")
+}
+
+enum OcorrenciaTipo {
+  DISCIPLINAR
+  SAUDE
+}
+
+model Ocorrencia {
+  id        String         @id @default(cuid())
+  alunoId   String
+  aluno     Aluno          @relation(fields: [alunoId], references: [id], onDelete: Restrict)
+  tipo      OcorrenciaTipo
+  descricao String         @db.Text
+  dataHora  DateTime       @default(now())
+
+  registradoPorId String
+  registradoPor   User   @relation("StaffRegistrouOcorrencia", fields: [registradoPorId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([alunoId, dataHora])
+  @@map("ocorrencias")
+}
+
+// ---------------------------------------------------------------------------
+// Comunicação — recados (RF-015 a RF-019)
+// ---------------------------------------------------------------------------
+
+enum RecadoDestinatario {
+  TODA_INSTITUICAO
+  TURMA
+  INDIVIDUAL
+}
+
+model Recado {
+  id           String             @id @default(cuid())
+  tenantId     String
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  titulo       String             @db.VarChar(200)
+  corpo        String             @db.Text
+  destinatario RecadoDestinatario
+
+  /// Preenchido apenas quando destinatario = TURMA.
+  turmaId String?
+  turma   Turma?  @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+
+  /// Preenchido apenas quando destinatario = INDIVIDUAL (recado sobre um aluno específico).
+  alunoId String?
+  aluno   Aluno?  @relation(fields: [alunoId], references: [id], onDelete: SetNull)
+
+  autorId String
+  autor   User   @relation("AutorRecado", fields: [autorId], references: [id], onDelete: Restrict)
+
+  publicadoEm DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  anexos              RecadoAnexo[]
+  confirmacoesLeitura RecadoConfirmacaoLeitura[]
+
+  @@index([tenantId, publicadoEm])
+  @@index([turmaId])
+  @@index([alunoId])
+  @@map("recados")
+}
+
+model RecadoAnexo {
+  id           String @id @default(cuid())
+  recadoId     String
+  recado       Recado @relation(fields: [recadoId], references: [id], onDelete: Cascade)
+  nomeArquivo  String @db.VarChar(255)
+  url          String @db.VarChar(500)
+  tamanhoBytes Int
+
+  createdAt DateTime @default(now())
+
+  @@index([recadoId])
+  @@map("recado_anexos")
+}
+
+/// Confirmação de leitura/ciência de um recado (RF-016).
+model RecadoConfirmacaoLeitura {
+  id            String   @id @default(cuid())
+  recadoId      String
+  recado        Recado   @relation(fields: [recadoId], references: [id], onDelete: Cascade)
+  responsavelId String
+  responsavel   User     @relation(fields: [responsavelId], references: [id], onDelete: Restrict)
+  lidoEm        DateTime @default(now())
+
+  @@unique([recadoId, responsavelId])
+  @@map("recado_confirmacoes_leitura")
+}
+
+/// Canal de mensagens diretas responsável↔escola/professor (RF-019, opcional —
+/// habilitado por tenant em Tenant.mensagensDiretasHabilitadas).
+model Conversa {
+  id            String @id @default(cuid())
+  tenantId      String
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  responsavelId String
+  responsavel   User   @relation("ResponsavelConversa", fields: [responsavelId], references: [id], onDelete: Restrict)
+  staffId       String
+  staff         User   @relation("StaffConversa", fields: [staffId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  mensagens Mensagem[]
+
+  @@unique([tenantId, responsavelId, staffId])
+  @@map("conversas")
+}
+
+model Mensagem {
+  id         String    @id @default(cuid())
+  conversaId String
+  conversa   Conversa  @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+  autorId    String
+  autor      User      @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  corpo      String    @db.Text
+  enviadoEm  DateTime  @default(now())
+  lidoEm     DateTime?
+
+  @@index([conversaId, enviadoEm])
+  @@map("mensagens")
+}
+
+// ---------------------------------------------------------------------------
+// Agenda (RF-024 a RF-027)
+// ---------------------------------------------------------------------------
+
+enum EventoTipo {
+  EVENTO
+  PROVA
+  REUNIAO
+  FERIADO
+}
+
+model Evento {
+  id         String     @id @default(cuid())
+  tenantId   String
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  titulo     String     @db.VarChar(200)
+  descricao  String?    @db.Text
+  tipo       EventoTipo
+  dataInicio DateTime
+  dataFim    DateTime?
+
+  /// Nulo = evento vale para toda a instituição (RF-025).
+  turmaId String?
+  turma   Turma?  @relation(fields: [turmaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([tenantId, dataInicio])
+  @@index([turmaId])
+  @@map("eventos")
+}
+
+// ---------------------------------------------------------------------------
+// Notificações (RF-013, RF-018, RF-021, RF-027, RNF-019)
+// ---------------------------------------------------------------------------
+
+enum NotificacaoCanal {
+  PUSH
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum NotificacaoTipo {
+  FALTA
+  RECADO
+  EVENTO
+  MOVIMENTACAO
+  OCORRENCIA
+}
+
+enum NotificacaoStatus {
+  PENDENTE
+  ENVIADO
+  FALHOU
+}
+
+/// Registro de tentativas de notificação multicanal, para suportar fallback
+/// entre canais quando um falha (RNF-019). `referenciaId` aponta para entidades
+/// diferentes conforme `tipo` (Recado, Evento, Movimentacao, Ocorrencia, Presenca)
+/// — não é uma foreign key real, é resolvida pela camada de aplicação.
+model Notificacao {
+  id             String            @id @default(cuid())
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  destinatarioId String
+  destinatario   User              @relation(fields: [destinatarioId], references: [id], onDelete: Cascade)
+  canal          NotificacaoCanal
+  tipo           NotificacaoTipo
+  referenciaId   String
+  status         NotificacaoStatus @default(PENDENTE)
+  enviadoEm      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, destinatarioId, createdAt])
+  @@index([status])
+  @@map("notificacoes")
 }
