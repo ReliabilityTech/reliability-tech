@@ -67,6 +67,10 @@ export async function apiFetch<TSchema extends ZodTypeAny>(
 ): Promise<z.infer<TSchema>> {
   const response = await fetch(buildUrl(path, params), {
     ...init,
+    // A sessão vive em cookies httpOnly (ver AuthController na API) — sem
+    // isso o navegador não envia nem recebe `Set-Cookie` entre localhost:3000
+    // e localhost:3333 (origens diferentes).
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
