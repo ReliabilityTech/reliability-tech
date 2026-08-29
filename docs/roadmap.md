@@ -8,7 +8,7 @@ o resto depende delas.
 | # | Tarefa | Status |
 | - | ------ | -------------------- |
 | 0.1 | Importar RFs e RNFs do Notion para `docs/requisitos/` | ✅ Concluído em 2026-08-29 |
-| 0.2 | Extrair tokens do protótipo do Stitch para `globals.css` | Pendente — protótipo ainda não acessado |
+| 0.2 | Extrair tokens do protótipo do Stitch para `globals.css` | ✅ Concluído em 2026-08-30 — cor de marca (`#26734D`); ver [design-system.md](design-system.md) |
 | 0.3 | Responder às perguntas do [ADR 0004](adr/0004-autenticacao-e-papeis.md) — papéis e multi-tenancy | ✅ Concluído em 2026-08-29 — ver ADR 0004 e [ADR 0006](adr/0006-estrategia-multi-tenancy.md). SSO/MFA/retenção de auditoria seguem em aberto, não bloqueiam a Fase 1 |
 | 0.4 | Confirmar hospedagem e restrições de conformidade (LGPD) | Pendente — bloqueia RNF-009 (SLA) e RNF-011 (RTO/RPO), não bloqueia modelagem de domínio |
 

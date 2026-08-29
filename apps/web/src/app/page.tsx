@@ -54,7 +54,7 @@ export default async function HomePage() {
           <code className="font-mono">@arbora/contracts</code>.
         </StatusCard>
         <StatusCard title="Design system" tone="pendente">
-          Tokens provisórios. Precisam ser extraídos do protótipo do Stitch.
+          Cor de marca extraída do protótipo do Stitch. Telas reais e tipografia seguem pendentes.
         </StatusCard>
       </section>
 

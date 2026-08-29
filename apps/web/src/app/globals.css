@@ -3,26 +3,27 @@
 /*
  * Design tokens do Arbora.
  *
- * PROVISÓRIO: a paleta e a tipografia abaixo são um ponto de partida coerente
- * com o nome do produto (arbor → verde) e ainda NÃO foram extraídas do
- * protótipo do Stitch. Ao sincronizar com o protótipo, altere apenas os valores
- * deste bloco — nenhum componente usa cor literal.
- * Ver docs/design-system.md.
+ * Verde institucional (#26734D) extraído do protótipo do Stitch em 2026-08-30
+ * ("Portal Escolar Multi-tenant") — ver docs/design-system.md. O restante da
+ * rampa é derivado desse valor (mesmo matiz, luminosidade/croma
+ * proporcionais); tipografia e espaçamento ainda seguem o padrão do Tailwind,
+ * o protótipo não especifica uma escala numérica própria.
  */
 @theme {
-  --color-brand-50: oklch(0.97 0.02 150);
-  --color-brand-100: oklch(0.94 0.04 150);
-  --color-brand-200: oklch(0.88 0.07 150);
-  --color-brand-300: oklch(0.8 0.11 150);
-  --color-brand-400: oklch(0.71 0.14 150);
-  --color-brand-500: oklch(0.62 0.15 150);
-  --color-brand-600: oklch(0.53 0.13 150);
-  --color-brand-700: oklch(0.44 0.11 150);
-  --color-brand-800: oklch(0.36 0.08 150);
-  --color-brand-900: oklch(0.28 0.06 150);
+  --color-brand-50: oklch(0.94 0.015 158);
+  --color-brand-100: oklch(0.91 0.03 158);
+  --color-brand-200: oklch(0.85 0.052 158);
+  --color-brand-300: oklch(0.77 0.082 158);
+  --color-brand-400: oklch(0.68 0.105 158);
+  --color-brand-500: oklch(0.59 0.112 158);
+  /* #26734D — verde institucional do Arbora Design System. */
+  --color-brand-600: oklch(0.5 0.097 158);
+  --color-brand-700: oklch(0.41 0.082 158);
+  --color-brand-800: oklch(0.33 0.06 158);
+  --color-brand-900: oklch(0.25 0.045 158);
 
   /* Cores semânticas de estado — usadas por alertas e indicadores. */
-  --color-success: oklch(0.62 0.15 150);
+  --color-success: oklch(0.59 0.112 158);
   --color-warning: oklch(0.75 0.15 75);
   --color-danger: oklch(0.58 0.2 25);
   --color-info: oklch(0.62 0.13 250);
