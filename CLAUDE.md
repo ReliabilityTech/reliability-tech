@@ -30,19 +30,22 @@ antes do typecheck — os tipos do Prisma Client são gerados a partir do schema
 
 ## Estado do projeto
 
-A fundação está pronta e o domínio de negócio (Fase 0 e 1 do roadmap) está modelado: RFs/RNFs
-importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004 e ADR
-0006), entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts`. **Autenticação
-(login, guards, hash real de senha) ainda não está implementada** — é a Fase 2. O protótipo do
-Stitch ainda não foi acessado, então telas e tokens de design seguem pendentes (Fase 3).
+A fundação está pronta, o domínio está modelado e a autenticação está implementada (Fases 0 a 2
+do roadmap): RFs/RNFs importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy
+decididos (ADR 0004 e ADR 0006), entidades em `schema.prisma` e schemas espelhados em
+`@arbora/contracts`, login/refresh/logout via JWT em cookies httpOnly (`apps/api/src/auth/`),
+`AuthGuard`/`RolesGuard` globais, sessão protegida no front (`apps/web/src/middleware.ts`) e
+interceptor de auditoria em `AuditLog`. O protótipo do Stitch ainda não foi acessado, então telas
+reais e tokens de design seguem pendentes (Fase 3) — a tela de login e a home atual são
+provisórias.
 
 Antes de mexer no domínio, leia:
 
 - `docs/requisitos/funcionais.md` e `docs/requisitos/nao-funcionais.md` — RF-NNN/RNF-NNN, fonte
   de verdade dos requisitos (não duplicar o conteúdo deles aqui)
 - `docs/requisitos/glossario.md` — nome de cada entidade/papel, em português, sem sinônimo
-- `docs/adr/0004-autenticacao-e-papeis.md` — papéis (`super_admin`, `admin_escolar`,
-  `coordenacao`, `professor`, `responsavel`); SSO, MFA e retenção de auditoria seguem em aberto
+- `docs/adr/0004-autenticacao-e-papeis.md` — papéis (`SUPER_ADMIN`, `ADMIN_ESCOLAR`,
+  `COORDENACAO`, `PROFESSOR`, `RESPONSAVEL`); SSO, MFA e retenção de auditoria seguem em aberto
 - `docs/adr/0006-estrategia-multi-tenancy.md` — banco compartilhado, discriminador `tenant_id`
   obrigatório em toda tabela de escola; RLS no Postgres (segunda camada) **ainda não configurado**
   — ver dívida aberta em `docs/roadmap.md` Fase 1

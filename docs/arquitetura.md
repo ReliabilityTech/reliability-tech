@@ -79,19 +79,39 @@ entram como `v2` sem quebrar clientes existentes.
 
 ### Segurança (baseline já implementado)
 
-| Controle             | Onde                                        |
-| -------------------- | ------------------------------------------- |
-| Cabeçalhos seguros   | `helmet()` na API, `headers()` no Next       |
-| CORS restrito        | `CORS_ORIGINS`, sem curinga                  |
-| Rate limit global    | `@nestjs/throttler`                          |
-| Erros sem vazamento  | `AllExceptionsFilter` não expõe stack traces |
-| Segredos fora do git | `.env` ignorado; só `.env.example` versionado |
+| Controle              | Onde                                                          |
+| --------------------- | -------------------------------------------------------------- |
+| Cabeçalhos seguros     | `helmet()` na API, `headers()` no Next                         |
+| CORS restrito          | `CORS_ORIGINS`, sem curinga                                     |
+| Rate limit global      | `@nestjs/throttler`                                             |
+| Erros sem vazamento    | `AllExceptionsFilter` não expõe stack traces                   |
+| Segredos fora do git   | `.env` ignorado; só `.env.example` versionado                  |
+| Sessão em cookie httpOnly | `apps/api/src/auth/` — token de acesso não é acessível via JS |
+| Senha com hash forte   | `argon2id` (`PasswordService`)                                 |
+| RBAC                   | `AuthGuard` + `RolesGuard`, globais via `APP_GUARD`             |
+| Trilha de auditoria    | `AuditInterceptor` + `@Audit(action, entity)`                  |
+
+### Autenticação e autorização
+
+Login e refresh emitem dois cookies httpOnly (`arbora_access`, curto, e `arbora_refresh`, longo
+— ver `apps/api/src/auth/auth.constants.ts`). Nenhum token trafega no corpo da resposta JSON, só
+o usuário (ver `AuthSession` em `@arbora/contracts`). O refresh token é rotacionado a cada uso: o
+antigo é revogado e um novo é emitido, com hash (não o valor bruto) guardado em `RefreshToken`.
+
+`AuthGuard` e `RolesGuard` são globais (`APP_GUARD`) — toda rota exige sessão válida por padrão.
+Rotas que não podem depender de sessão (login, refresh, logout, `/health`) usam `@Public()`. Papel
+exigido: `@Roles('ADMIN_ESCOLAR', ...)`.
+
+No front, `apps/web/src/middleware.ts` protege toda rota fora de `/login`, consultando
+`GET /auth/me` na API a cada navegação — ver dívida técnica no roadmap.
 
 ## Limites conhecidos
 
 Estes pontos são deliberadamente simples até que os requisitos sejam consolidados:
 
-- **Domínio não modelado.** O Prisma só tem `User` e `AuditLog`.
-- **Autenticação não implementada.** Existe o contrato, não o fluxo.
+- **RLS não configurado.** O isolamento entre tenants depende só da camada de aplicação
+  (`tenantId` obrigatório) — ver ADR 0006 e dívida técnica no roadmap.
+- **Sem SSO/MFA.** Só e-mail e senha (ADR 0004).
+- **Sem recuperação de senha.** RF-003 depende de um provedor de e-mail/SMS ainda não escolhido.
 - **Sem pipeline de deploy.** Não há Dockerfile de produção nem ambiente provisionado.
 - **Sem testes E2E.** Só testes unitários. Playwright está no roadmap.

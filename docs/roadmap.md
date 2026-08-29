@@ -21,20 +21,19 @@ o resto depende delas.
 | 1.3 | Gerar a primeira migração e um seed representativo | ✅ Concluído em 2026-08-29 — migração `20260829190237_dominio_arbora` |
 | 1.4 | Preencher `docs/requisitos/glossario.md` | ✅ Concluído em 2026-08-29 |
 
-**Dívida aberta pela Fase 1:** RLS por `tenant_id` (segunda camada de isolamento, ver
-[ADR 0006](adr/0006-estrategia-multi-tenancy.md)) ainda não configurado no banco — hoje o
-isolamento entre tenants depende inteiramente da camada de aplicação. Fazer antes de qualquer
-endpoint de escrita ir para produção.
-
 ## Fase 2 — Autenticação e autorização
 
-| # | Tarefa |
-| - | ------ |
-| 2.1 | Hash de senha com Argon2id (substituir o placeholder do seed) |
-| 2.2 | `POST /auth/login` e `POST /auth/refresh` com JWT de vida curta |
-| 2.3 | `AuthGuard` e `RolesGuard` (`@Roles('admin')`) |
-| 2.4 | Sessão no front: rotas protegidas e middleware do Next |
-| 2.5 | Interceptor que grava em `AuditLog` |
+| # | Tarefa | Status |
+| - | ------ | ------ |
+| 2.1 | Hash de senha com Argon2id (substituir o placeholder do seed) | ✅ Concluído em 2026-08-29 |
+| 2.2 | `POST /auth/login` e `POST /auth/refresh` com JWT de vida curta | ✅ Concluído em 2026-08-29 — tokens em cookies httpOnly, refresh com rotação |
+| 2.3 | `AuthGuard` e `RolesGuard` (`@Roles('admin')`) | ✅ Concluído em 2026-08-29 — globais via `APP_GUARD`, `@Public()` para rotas isentas |
+| 2.4 | Sessão no front: rotas protegidas e middleware do Next | ✅ Concluído em 2026-08-29 — `/login`, `middleware.ts`, testado no navegador |
+| 2.5 | Interceptor que grava em `AuditLog` | ✅ Concluído em 2026-08-29 — `@Audit(action, entity)`, aplicado a login/logout |
+
+RF-003 (recuperação de senha por e-mail/SMS) não foi implementado nesta fase — depende de um
+provedor de e-mail/SMS ainda não escolhido. SSO, MFA e retenção de auditoria seguem em aberto (ver
+ADR 0004). Outras dívidas na tabela ao final deste documento.
 
 ## Fase 3 — Telas do protótipo
 
@@ -73,8 +72,10 @@ Registradas aqui de forma consciente, não esquecidas:
 
 | Item | Onde | Por que existe |
 | ---- | ---- | -------------- |
-| Hash de senha placeholder (SHA-256) | `apps/api/prisma/seed.ts` | Só o contrato de auth existe; substituir na fase 2.1 |
+| RLS por `tenant_id` não configurado no Postgres | banco (ver ADR 0006) | Isolamento entre tenants depende só da aplicação por enquanto |
 | Tokens de design provisórios | `apps/web/src/app/globals.css` | Protótipo inacessível |
-| Página inicial temporária | `apps/web/src/app/page.tsx` | Existe para validar o stack de ponta a ponta |
+| Página inicial temporária | `apps/web/src/app/page.tsx` | Existe para validar o stack de ponta a ponta, agora com a sessão |
 | Sem cache remoto do Turborepo | `turbo.json` | Só compensa com o time maior; hoje o cache é local |
 | Sem testes E2E | — | Depende de haver telas reais |
+| `middleware.ts` chama a API a cada navegação | `apps/web/src/middleware.ts` | Simples e correto; otimizar (JWT local) se a latência incomodar |
+| Sem refresh silencioso no front | `apps/web/src/lib/auth.ts` | Access token expirado em uso só é pego na próxima navegação, via redirect |
