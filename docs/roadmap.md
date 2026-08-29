@@ -5,23 +5,26 @@ o resto depende delas.
 
 ## Fase 0 — Desbloquear (precisa de ação humana)
 
-Nenhuma destas tarefas pôde ser feita automaticamente porque as fontes são privadas.
-
-| # | Tarefa | Por que é bloqueante |
+| # | Tarefa | Status |
 | - | ------ | -------------------- |
-| 0.1 | Importar RFs e RNFs do Notion para `docs/requisitos/` | Define o domínio inteiro |
-| 0.2 | Extrair tokens do protótipo do Stitch para `globals.css` | Todo componente depende deles |
-| 0.3 | Responder às perguntas do [ADR 0004](adr/0004-autenticacao-e-papeis.md) — em especial **multi-tenancy** | Muda o modelo de dados por inteiro; barato agora, caro depois |
-| 0.4 | Confirmar hospedagem e restrições de conformidade (LGPD) | Define infraestrutura e retenção de dados |
+| 0.1 | Importar RFs e RNFs do Notion para `docs/requisitos/` | ✅ Concluído em 2026-08-29 |
+| 0.2 | Extrair tokens do protótipo do Stitch para `globals.css` | Pendente — protótipo ainda não acessado |
+| 0.3 | Responder às perguntas do [ADR 0004](adr/0004-autenticacao-e-papeis.md) — papéis e multi-tenancy | ✅ Concluído em 2026-08-29 — ver ADR 0004 e [ADR 0006](adr/0006-estrategia-multi-tenancy.md). SSO/MFA/retenção de auditoria seguem em aberto, não bloqueiam a Fase 1 |
+| 0.4 | Confirmar hospedagem e restrições de conformidade (LGPD) | Pendente — bloqueia RNF-009 (SLA) e RNF-011 (RTO/RPO), não bloqueia modelagem de domínio |
 
 ## Fase 1 — Domínio
 
-| # | Tarefa | Depende de |
-| - | ------ | ---------- |
-| 1.1 | Modelar as entidades de negócio em `schema.prisma` | 0.1, 0.3 |
-| 1.2 | Escrever os schemas de domínio em `@arbora/contracts` | 1.1 |
-| 1.3 | Gerar a primeira migração e um seed representativo | 1.1 |
-| 1.4 | Preencher `docs/requisitos/glossario.md` | 0.1 |
+| # | Tarefa | Status |
+| - | ------ | ------ |
+| 1.1 | Modelar as entidades de negócio em `schema.prisma` | ✅ Concluído em 2026-08-29 — 21 modelos cobrindo RF-001 a RF-029 |
+| 1.2 | Escrever os schemas de domínio em `@arbora/contracts` | ✅ Concluído em 2026-08-29 |
+| 1.3 | Gerar a primeira migração e um seed representativo | ✅ Concluído em 2026-08-29 — migração `20260829190237_dominio_arbora` |
+| 1.4 | Preencher `docs/requisitos/glossario.md` | ✅ Concluído em 2026-08-29 |
+
+**Dívida aberta pela Fase 1:** RLS por `tenant_id` (segunda camada de isolamento, ver
+[ADR 0006](adr/0006-estrategia-multi-tenancy.md)) ainda não configurado no banco — hoje o
+isolamento entre tenants depende inteiramente da camada de aplicação. Fazer antes de qualquer
+endpoint de escrita ir para produção.
 
 ## Fase 2 — Autenticação e autorização
 

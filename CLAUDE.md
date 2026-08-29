@@ -30,15 +30,22 @@ antes do typecheck — os tipos do Prisma Client são gerados a partir do schema
 
 ## Estado do projeto
 
-A fundação está pronta; o **domínio de negócio não está modelado**. Os requisitos ainda não
-foram importados do Notion e o protótipo do Stitch não foi acessado — ambas as fontes são
-privadas.
+A fundação está pronta e o domínio de negócio (Fase 0 e 1 do roadmap) está modelado: RFs/RNFs
+importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004 e ADR
+0006), entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts`. **Autenticação
+(login, guards, hash real de senha) ainda não está implementada** — é a Fase 2. O protótipo do
+Stitch ainda não foi acessado, então telas e tokens de design seguem pendentes (Fase 3).
 
-Antes de modelar qualquer entidade, leia:
+Antes de mexer no domínio, leia:
 
-- `docs/requisitos/README.md` — o que falta importar
-- `docs/adr/0004-autenticacao-e-papeis.md` — hipóteses ainda **não confirmadas**, em especial
-  sobre multi-tenancy, que muda o modelo de dados inteiro
+- `docs/requisitos/funcionais.md` e `docs/requisitos/nao-funcionais.md` — RF-NNN/RNF-NNN, fonte
+  de verdade dos requisitos (não duplicar o conteúdo deles aqui)
+- `docs/requisitos/glossario.md` — nome de cada entidade/papel, em português, sem sinônimo
+- `docs/adr/0004-autenticacao-e-papeis.md` — papéis (`super_admin`, `admin_escolar`,
+  `coordenacao`, `professor`, `responsavel`); SSO, MFA e retenção de auditoria seguem em aberto
+- `docs/adr/0006-estrategia-multi-tenancy.md` — banco compartilhado, discriminador `tenant_id`
+  obrigatório em toda tabela de escola; RLS no Postgres (segunda camada) **ainda não configurado**
+  — ver dívida aberta em `docs/roadmap.md` Fase 1
 - `docs/roadmap.md` — ordem sugerida de trabalho
 
 Se uma tarefa depender de um requisito que não está em `docs/requisitos/`, **pergunte antes de
