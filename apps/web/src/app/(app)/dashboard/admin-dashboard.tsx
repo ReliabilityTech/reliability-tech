@@ -1,29 +1,25 @@
+import { type DashboardAdminResponse } from '@arbora/contracts';
 import { AlertTriangle, Bell, TrendingUp, Users } from 'lucide-react';
 
 import { StatCard } from '@/components/stat-card';
 import { StatusBadge } from '@/components/status-badge';
 
-const ATENCAO_NECESSARIA = [
-  { nome: 'Lucas Oliveira', turma: '9º Ano A', frequencia: '78%', faltas: 12, nivel: 'Crítico' },
-  { nome: 'Beatriz Santos', turma: '5º Ano B', frequencia: '82%', faltas: 8, nivel: 'Alerta' },
-  { nome: 'Gabriel Costa', turma: '6º Ano C', frequencia: '85%', faltas: 6, nivel: 'Alerta' },
-  {
-    nome: 'Mariana Lima',
-    turma: '1º Ens. Médio A',
-    frequencia: '75%',
-    faltas: 15,
-    nivel: 'Crítico',
-  },
-] as const;
+const LIMIAR_CRITICO_FREQUENCIA = 75;
 
-const ATIVIDADES_RECENTES = [
-  { titulo: 'Nota lançada', descricao: 'Prof. Marcos alterou uma nota de Matemática' },
-  { titulo: 'Novo comunicado', descricao: 'Comunicado enviado para "Festa Junina"' },
-  { titulo: 'Ocorrência', descricao: 'Registrado incidente disciplinar' },
-  { titulo: 'Nova matrícula', descricao: 'Matrícula concluída para Wandersley' },
-] as const;
+function formatarPercentual(valor: number | null): string {
+  return valor === null ? '—' : `${valor}%`;
+}
 
-export function AdminDashboard() {
+function formatarQuando(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function AdminDashboard({ data }: { data: DashboardAdminResponse }) {
   return (
     <div className="p-8">
       <header className="mb-6">
@@ -34,10 +30,18 @@ export function AdminDashboard() {
       </header>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Users} label="Total de alunos" value="820" hint="+12 este mês" />
-        <StatCard icon={TrendingUp} label="Frequência média" value="94,7%" hint="Meta: 95%" />
-        <StatCard icon={AlertTriangle} label="Faltas hoje" value="18" hint="-2% vs. ontem" />
-        <StatCard icon={Bell} label="Comunicados pendentes" value="4" />
+        <StatCard icon={Users} label="Total de alunos" value={String(data.totalAlunos)} />
+        <StatCard
+          icon={TrendingUp}
+          label="Frequência média"
+          value={formatarPercentual(data.frequenciaMedia)}
+        />
+        <StatCard icon={AlertTriangle} label="Faltas hoje" value={String(data.faltasHoje)} />
+        <StatCard
+          icon={Bell}
+          label="Comunicados (7 dias)"
+          value={String(data.comunicadosRecentes)}
+        />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">
@@ -48,48 +52,62 @@ export function AdminDashboard() {
               Ver todos
             </a>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-[var(--color-foreground-muted)]">
-                <tr>
-                  <th className="py-2 pr-2 font-medium">Nome</th>
-                  <th className="py-2 pr-2 font-medium">Turma</th>
-                  <th className="py-2 pr-2 font-medium">Frequência</th>
-                  <th className="py-2 pr-2 font-medium">Faltas</th>
-                  <th className="py-2 font-medium">Situação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--color-border)]">
-                {ATENCAO_NECESSARIA.map((aluno) => (
-                  <tr key={aluno.nome}>
-                    <td className="py-2 pr-2 font-medium">{aluno.nome}</td>
-                    <td className="py-2 pr-2 text-[var(--color-foreground-muted)]">
-                      {aluno.turma}
-                    </td>
-                    <td className="py-2 pr-2">{aluno.frequencia}</td>
-                    <td className="py-2 pr-2">{aluno.faltas}</td>
-                    <td className="py-2">
-                      <StatusBadge tone={aluno.nivel === 'Crítico' ? 'danger' : 'warning'}>
-                        {aluno.nivel}
-                      </StatusBadge>
-                    </td>
+          {data.atencaoNecessaria.length === 0 ? (
+            <p className="text-sm text-[var(--color-foreground-muted)]">
+              Nenhum aluno abaixo da frequência mínima no momento.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs uppercase text-[var(--color-foreground-muted)]">
+                  <tr>
+                    <th className="py-2 pr-2 font-medium">Nome</th>
+                    <th className="py-2 pr-2 font-medium">Turma</th>
+                    <th className="py-2 pr-2 font-medium">Frequência</th>
+                    <th className="py-2 font-medium">Situação</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {data.atencaoNecessaria.map((aluno) => (
+                    <tr key={aluno.alunoId}>
+                      <td className="py-2 pr-2 font-medium">{aluno.nome}</td>
+                      <td className="py-2 pr-2 text-[var(--color-foreground-muted)]">
+                        {aluno.turmaNome ?? '—'}
+                      </td>
+                      <td className="py-2 pr-2">{aluno.frequencia}%</td>
+                      <td className="py-2">
+                        <StatusBadge
+                          tone={aluno.frequencia < LIMIAR_CRITICO_FREQUENCIA ? 'danger' : 'warning'}
+                        >
+                          {aluno.frequencia < LIMIAR_CRITICO_FREQUENCIA ? 'Crítico' : 'Alerta'}
+                        </StatusBadge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <h2 className="mb-3 font-semibold">Atividades recentes</h2>
-          <ul className="flex flex-col gap-3 text-sm">
-            {ATIVIDADES_RECENTES.map((atividade) => (
-              <li key={atividade.titulo}>
-                <p className="font-medium">{atividade.titulo}</p>
-                <p className="text-[var(--color-foreground-muted)]">{atividade.descricao}</p>
-              </li>
-            ))}
-          </ul>
+          {data.atividadesRecentes.length === 0 ? (
+            <p className="text-sm text-[var(--color-foreground-muted)]">
+              Nenhuma atividade registrada ainda.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-3 text-sm">
+              {data.atividadesRecentes.map((atividade, indice) => (
+                <li key={indice}>
+                  <p className="font-medium">{atividade.descricao}</p>
+                  <p className="text-[var(--color-foreground-muted)]">
+                    {formatarQuando(atividade.quando)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
     </div>

@@ -1,46 +1,30 @@
-import { CheckCircle2, Plus, Send } from 'lucide-react';
+import { CheckCircle2, Send } from 'lucide-react';
 
 import { StatCard } from '@/components/stat-card';
-import { type BadgeTone, StatusBadge } from '@/components/status-badge';
+import { listarTurmasProfessor } from '@/lib/professor';
+import { listarRecados } from '@/lib/recados';
 import { requireRole } from '@/lib/server-session';
 
-const COMUNICADOS = [
-  {
-    titulo: 'Reunião de Pais - 1º Bimestre',
-    id: 'ANN-2026-001',
-    destinatario: 'Pais (todos)',
-    publicadoPor: 'Diretoria Acadêmica',
-    data: '12 out. 2026',
-    leitura: '85%',
-    status: 'Publicado' as const,
-  },
-  {
-    titulo: 'Aviso de Feriado Nacional',
-    id: 'ANN-2026-004',
-    destinatario: 'Toda a instituição',
-    publicadoPor: 'RH Central',
-    data: '15 out. 2026',
-    leitura: '45%',
-    status: 'Publicado' as const,
-  },
-  {
-    titulo: 'Lista de Materiais Complementares',
-    id: 'ANN-2026-007',
-    destinatario: 'Professores (K-12)',
-    publicadoPor: 'Coord. Maria Silva',
-    data: '18 out. 2026',
-    leitura: '100%',
-    status: 'Arquivado' as const,
-  },
-] as const;
+import { NovoRecadoDialog } from './novo-recado-dialog';
 
-const STATUS_TONE: Record<(typeof COMUNICADOS)[number]['status'], BadgeTone> = {
-  Publicado: 'success',
-  Arquivado: 'neutral',
-};
+function formatarData(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
 
 export default async function ComunicadosPage() {
-  await requireRole(['ADMIN_ESCOLAR', 'COORDENACAO', 'PROFESSOR']);
+  const user = await requireRole(['ADMIN_ESCOLAR', 'COORDENACAO', 'PROFESSOR']);
+  const [recados, turmas] = await Promise.all([
+    listarRecados(),
+    user.role === 'PROFESSOR' ? listarTurmasProfessor() : Promise.resolve([]),
+  ]);
+
+  const comLeituraPendente = recados.filter(
+    (recado) => recado.leituraPercentual !== null && recado.leituraPercentual < 100,
+  ).length;
 
   return (
     <div className="p-8">
@@ -51,51 +35,56 @@ export default async function ComunicadosPage() {
             Envie informações para responsáveis, turmas ou toda a instituição.
           </p>
         </div>
-        <button
-          type="button"
-          className="rounded-(--radius-card) flex items-center gap-2 bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Novo comunicado
-        </button>
+        <NovoRecadoDialog turmas={turmas} />
       </header>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2">
-        <StatCard icon={Send} label="Publicados" value="142" />
-        <StatCard icon={CheckCircle2} label="Aguardando ciência" value="28" />
+        <StatCard icon={Send} label="Publicados" value={String(recados.length)} />
+        <StatCard
+          icon={CheckCircle2}
+          label="Com leitura pendente"
+          value={String(comLeituraPendente)}
+        />
       </section>
 
-      <div className="rounded-(--radius-card) overflow-x-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-foreground-muted)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Título</th>
-              <th className="px-4 py-3 font-medium">Destinatário</th>
-              <th className="px-4 py-3 font-medium">Publicado por</th>
-              <th className="px-4 py-3 font-medium">Data</th>
-              <th className="px-4 py-3 font-medium">Leitura</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {COMUNICADOS.map((c) => (
-              <tr key={c.id}>
-                <td className="px-4 py-3">
-                  <p className="font-medium">{c.titulo}</p>
-                  <p className="text-xs text-[var(--color-foreground-muted)]">ID {c.id}</p>
-                </td>
-                <td className="px-4 py-3 text-[var(--color-foreground-muted)]">{c.destinatario}</td>
-                <td className="px-4 py-3 text-[var(--color-foreground-muted)]">{c.publicadoPor}</td>
-                <td className="px-4 py-3 text-[var(--color-foreground-muted)]">{c.data}</td>
-                <td className="px-4 py-3">{c.leitura}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge tone={STATUS_TONE[c.status]}>{c.status}</StatusBadge>
-                </td>
+      {recados.length === 0 ? (
+        <p className="text-sm text-[var(--color-foreground-muted)]">
+          Nenhum comunicado publicado ainda.
+        </p>
+      ) : (
+        <div className="rounded-(--radius-card) overflow-x-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-foreground-muted)]">
+              <tr>
+                <th className="px-4 py-3 font-medium">Título</th>
+                <th className="px-4 py-3 font-medium">Destinatário</th>
+                <th className="px-4 py-3 font-medium">Publicado por</th>
+                <th className="px-4 py-3 font-medium">Data</th>
+                <th className="px-4 py-3 font-medium">Leitura</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {recados.map((recado) => (
+                <tr key={recado.id}>
+                  <td className="px-4 py-3 font-medium">{recado.titulo}</td>
+                  <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
+                    {recado.destinatarioLabel}
+                  </td>
+                  <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
+                    {recado.autorNome}
+                  </td>
+                  <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
+                    {formatarData(recado.publicadoEm)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {recado.leituraPercentual === null ? '—' : `${recado.leituraPercentual}%`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

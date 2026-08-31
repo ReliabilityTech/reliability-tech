@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 
+import { buscarDashboardAdmin, buscarDashboardProfessor } from '@/lib/dashboard';
 import { getServerUser } from '@/lib/server-session';
 
 import { AdminDashboard } from './admin-dashboard';
@@ -14,12 +15,16 @@ export default async function DashboardPage() {
     case 'SUPER_ADMIN':
       redirect('/super-admin');
       break;
-    case 'PROFESSOR':
-      return <ProfessorDashboard nome={user.name} />;
+    case 'PROFESSOR': {
+      const data = await buscarDashboardProfessor();
+      return <ProfessorDashboard nome={user.name} data={data} />;
+    }
     case 'RESPONSAVEL':
-      return <ResponsavelDashboard nomeAluno="Pedro Pereira" />;
+      return <ResponsavelDashboard />;
     case 'ADMIN_ESCOLAR':
-    case 'COORDENACAO':
-      return <AdminDashboard />;
+    case 'COORDENACAO': {
+      const data = await buscarDashboardAdmin();
+      return <AdminDashboard data={data} />;
+    }
   }
 }

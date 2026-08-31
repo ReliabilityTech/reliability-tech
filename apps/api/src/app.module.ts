@@ -6,12 +6,19 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AlunosModule } from './alunos/alunos.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './common/audit/audit.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { type Env, validateEnv } from './config/env';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { EventosModule } from './eventos/eventos.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProfessorModule } from './professor/professor.module';
+import { RecadosModule } from './recados/recados.module';
+import { ResponsavelModule } from './responsavel/responsavel.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
@@ -63,6 +70,13 @@ import { PrismaModule } from './prisma/prisma.module';
     AuditModule,
     AuthModule,
     HealthModule,
+    AlunosModule,
+    ProfessorModule,
+    RecadosModule,
+    EventosModule,
+    ResponsavelModule,
+    TenantsModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

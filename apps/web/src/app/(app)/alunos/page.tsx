@@ -1,56 +1,17 @@
+import { type AlunoStatus } from '@arbora/contracts';
 import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 import { type BadgeTone, StatusBadge } from '@/components/status-badge';
+import { listarAlunos } from '@/lib/alunos';
 import { requireRole } from '@/lib/server-session';
 
-const ALUNOS = [
-  {
-    id: '1',
-    nome: 'Alice Machado',
-    matricula: '2026-00152',
-    turma: '1º Ano EM · Turma A (Manhã)',
-    responsaveis: 'Beatriz M. (Mãe)',
-    frequencia: '98%',
-    status: 'Ativo' as const,
-  },
-  {
-    id: '2',
-    nome: 'Bruno Rocha',
-    matricula: '2026-00084',
-    turma: '2º Ano EM · Turma B (Tarde)',
-    responsaveis: 'Carlos R. (Pai)',
-    frequencia: '75%',
-    status: 'Em risco' as const,
-  },
-  {
-    id: '3',
-    nome: 'Clara Mendes',
-    matricula: '2026-00131',
-    turma: '1º Ano EM · Turma A (Manhã)',
-    responsaveis: 'Sonia M. (Mãe)',
-    frequencia: '—',
-    status: 'Transferido' as const,
-  },
-  {
-    id: '4',
-    nome: 'Daniel Silva',
-    matricula: '2026-00012',
-    turma: '3º Ano EM · Turma C',
-    responsaveis: 'José S. (Pai)',
-    frequencia: '96%',
-    status: 'Ativo' as const,
-  },
-] as const;
-
-const STATUS_TONE: Record<(typeof ALUNOS)[number]['status'], BadgeTone> = {
-  Ativo: 'success',
-  'Em risco': 'danger',
-  Transferido: 'neutral',
-};
+const STATUS_LABEL: Record<AlunoStatus, string> = { ATIVO: 'Ativo', INATIVO: 'Inativo' };
+const STATUS_TONE: Record<AlunoStatus, BadgeTone> = { ATIVO: 'success', INATIVO: 'neutral' };
 
 export default async function AlunosPage() {
   await requireRole(['ADMIN_ESCOLAR', 'COORDENACAO']);
+  const alunos = await listarAlunos();
 
   return (
     <div className="p-8">
@@ -63,7 +24,8 @@ export default async function AlunosPage() {
         </div>
         <button
           type="button"
-          className="rounded-(--radius-card) flex items-center gap-2 bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
+          disabled
+          className="rounded-(--radius-card) flex items-center gap-2 bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           <UserPlus className="h-4 w-4" aria-hidden />
           Cadastrar aluno
@@ -83,7 +45,7 @@ export default async function AlunosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
-            {ALUNOS.map((aluno) => (
+            {alunos.map((aluno) => (
               <tr key={aluno.id}>
                 <td className="px-4 py-3">
                   <Link
@@ -96,13 +58,19 @@ export default async function AlunosPage() {
                 <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
                   {aluno.matricula}
                 </td>
-                <td className="px-4 py-3 text-[var(--color-foreground-muted)]">{aluno.turma}</td>
+                <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
+                  {aluno.turmaNome ?? '—'}
+                </td>
                 <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
                   {aluno.responsaveis}
                 </td>
-                <td className="px-4 py-3">{aluno.frequencia}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge tone={STATUS_TONE[aluno.status]}>{aluno.status}</StatusBadge>
+                  {aluno.frequencia === null ? '—' : `${aluno.frequencia}%`}
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge tone={STATUS_TONE[aluno.status]}>
+                    {STATUS_LABEL[aluno.status]}
+                  </StatusBadge>
                 </td>
               </tr>
             ))}
@@ -110,7 +78,7 @@ export default async function AlunosPage() {
         </table>
       </div>
       <p className="mt-3 text-sm text-[var(--color-foreground-muted)]">
-        Mostrando {ALUNOS.length} de 485 alunos
+        Mostrando {alunos.length} de {alunos.length} alunos
       </p>
     </div>
   );

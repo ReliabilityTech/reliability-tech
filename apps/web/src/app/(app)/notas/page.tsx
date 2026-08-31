@@ -1,39 +1,46 @@
-import { type BadgeTone, StatusBadge } from '@/components/status-badge';
+import { listarNotas, listarPeriodos, listarTurmasProfessor } from '@/lib/professor';
 import { requireRole } from '@/lib/server-session';
 
-const LANCAMENTOS = [
-  { nome: 'Ana Ferreira', nota: '8,5', situacao: 'Aprovado' as const, observacao: '' },
-  {
-    nome: 'Bruno Santos',
-    nota: '4,2',
-    situacao: 'Atenção' as const,
-    observacao: 'Precisa revisar o Capítulo 4',
-  },
-  {
-    nome: 'Carla Cavalcanti',
-    nota: 'AUS',
-    situacao: 'Ausente' as const,
-    observacao: 'Atestado médico apresentado',
-  },
-  { nome: 'Diego Martins', nota: '—', situacao: 'Sem nota' as const, observacao: '' },
-  {
-    nome: 'Eduardo Lima',
-    nota: '12,0',
-    situacao: 'Erro' as const,
-    observacao: 'Nota acima do máximo permitido',
-  },
-] as const;
+import { FiltrosNotas } from './filtros-notas';
+import { NotasForm } from './notas-form';
 
-const SITUACAO_TONE: Record<(typeof LANCAMENTOS)[number]['situacao'], BadgeTone> = {
-  Aprovado: 'success',
-  Atenção: 'warning',
-  Ausente: 'neutral',
-  'Sem nota': 'neutral',
-  Erro: 'danger',
-};
-
-export default async function LancamentoNotasPage() {
+export default async function LancamentoNotasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ turmaDisciplinaId?: string; periodoLetivoId?: string }>;
+}) {
   await requireRole(['PROFESSOR']);
+  const sp = await searchParams;
+  const [turmas, periodos] = await Promise.all([listarTurmasProfessor(), listarPeriodos()]);
+
+  if (turmas.length === 0) {
+    return (
+      <div className="p-8">
+        <p className="text-sm text-[var(--color-foreground-muted)]">
+          Nenhuma turma vinculada a este professor ainda.
+        </p>
+      </div>
+    );
+  }
+  if (periodos.length === 0) {
+    return (
+      <div className="p-8">
+        <p className="text-sm text-[var(--color-foreground-muted)]">
+          Nenhum período letivo cadastrado ainda.
+        </p>
+      </div>
+    );
+  }
+
+  const turmaDisciplinaId = turmas.some((t) => t.id === sp.turmaDisciplinaId)
+    ? sp.turmaDisciplinaId!
+    : turmas[0]!.id;
+  const periodoLetivoId = periodos.some((p) => p.id === sp.periodoLetivoId)
+    ? sp.periodoLetivoId!
+    : periodos[0]!.id;
+
+  const lancamentos = await listarNotas(turmaDisciplinaId, periodoLetivoId);
+  const turmaAtual = turmas.find((t) => t.id === turmaDisciplinaId)!;
 
   return (
     <div className="p-8">
@@ -41,63 +48,23 @@ export default async function LancamentoNotasPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Lançamento de notas</h1>
           <p className="text-sm text-[var(--color-foreground-muted)]">
-            Matemática · 5º Ano B · 1º Bimestre
+            {turmaAtual.disciplinaNome} · {turmaAtual.turmaNome}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="rounded-(--radius-card) border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-          >
-            Salvar rascunho
-          </button>
-          <button
-            type="button"
-            className="rounded-(--radius-card) bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white"
-          >
-            Publicar notas
-          </button>
-        </div>
+        <FiltrosNotas
+          turmas={turmas}
+          periodos={periodos}
+          turmaDisciplinaId={turmaDisciplinaId}
+          periodoLetivoId={periodoLetivoId}
+        />
       </header>
 
-      <div className="rounded-(--radius-card) overflow-x-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-foreground-muted)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Aluno</th>
-              <th className="px-4 py-3 font-medium">Nota (0-10)</th>
-              <th className="px-4 py-3 font-medium">Situação</th>
-              <th className="px-4 py-3 font-medium">Observação</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {LANCAMENTOS.map((linha) => (
-              <tr key={linha.nome}>
-                <td className="px-4 py-3 font-medium">{linha.nome}</td>
-                <td className="px-4 py-3">
-                  <input
-                    defaultValue={linha.nota}
-                    className={`rounded-(--radius-card) w-16 border px-2 py-1 text-sm ${
-                      linha.situacao === 'Erro'
-                        ? 'border-[var(--color-danger)] text-[var(--color-danger)]'
-                        : 'border-[var(--color-border)]'
-                    }`}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <StatusBadge tone={SITUACAO_TONE[linha.situacao]}>{linha.situacao}</StatusBadge>
-                </td>
-                <td className="px-4 py-3 italic text-[var(--color-foreground-muted)]">
-                  {linha.observacao || 'Adicionar nota...'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="mt-3 text-sm text-[var(--color-foreground-muted)]">
-        {LANCAMENTOS.length} de 28 alunos
-      </p>
+      <NotasForm
+        key={`${turmaDisciplinaId}-${periodoLetivoId}`}
+        turmaDisciplinaId={turmaDisciplinaId}
+        periodoLetivoId={periodoLetivoId}
+        lancamentos={lancamentos}
+      />
     </div>
   );
 }

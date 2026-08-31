@@ -40,7 +40,7 @@ ADR 0004). Outras dívidas na tabela ao final deste documento.
 | # | Tarefa | Status |
 | - | ------ | ------ |
 | 3.1 | Implementar as telas do Stitch, substituindo a página provisória | ✅ Concluído em 2026-08-31 — 10 telas em `apps/web/src/app/(app)/`, ver [design-system.md](design-system.md) |
-| 3.2 | Camada de dados no front (TanStack Query ou Server Components + cache) | Pendente — telas hoje usam array estático (mock), API não tem endpoints CRUD de domínio ainda |
+| 3.2 | Camada de dados no front (TanStack Query ou Server Components + cache) | ✅ Concluído em 2026-08-31 — endpoints de domínio na API (`AlunosModule`, `ProfessorModule`, `RecadosModule`, `EventosModule`, `TenantsModule`, `ResponsavelModule`, `DashboardModule`) e as 10 telas lendo/escrevendo dado real via Server Components + `apiFetch`/`serverFetch` |
 | 3.3 | Formulários com validação a partir dos schemas de `@arbora/contracts` | Pendente — depende de 3.2 e dos endpoints de escrita na API |
 | 3.4 | Estados de carregamento, vazio e erro em todas as listagens | Pendente — não faz sentido sem dado real (3.2) |
 | 3.5 | Revisão de acessibilidade (checklist em `docs/design-system.md`) | Pendente |
@@ -76,5 +76,5 @@ Registradas aqui de forma consciente, não esquecidas:
 | Sem cache remoto do Turborepo | `turbo.json` | Só compensa com o time maior; hoje o cache é local |
 | Sem testes E2E | — | Depende de haver telas reais |
 | `middleware.ts` chama a API a cada navegação | `apps/web/src/middleware.ts` | Simples e correto; otimizar (JWT local) se a latência incomodar |
-| Sem refresh silencioso no front | `apps/web/src/lib/auth.ts` | Access token expirado em uso só é pego na próxima navegação, via redirect |
-| Telas da Fase 3.1 usam dado mock, não a API | `apps/web/src/app/(app)/**` | API ainda não tem controllers/services de domínio (Aluno, Nota, Recado, etc.) — só o schema Prisma e os contracts existem (Fase 1). Falta uma fase própria pra isso antes da 3.2 |
+| Sem refresh silencioso no front | `apps/web/src/lib/auth.ts` | Access token expirado em uso só é pego na próxima navegação, via redirect — mutações client-side (`apiFetch`) podem falhar com 401 se o access token expirar no meio da sessão |
+| Seed não é idempotente para `Recado`, `Evento`, `Ocorrencia` e `Movimentacao` | `apps/api/prisma/seed.ts` | Usam `create` em vez de `upsert` (sem chave natural óbvia); rodar `db:seed` mais de uma vez duplica essas linhas — truncar as tabelas antes de re-semear |

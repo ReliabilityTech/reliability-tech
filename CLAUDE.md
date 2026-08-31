@@ -30,16 +30,21 @@ antes do typecheck — os tipos do Prisma Client são gerados a partir do schema
 
 ## Estado do projeto
 
-A fundação está pronta, o domínio está modelado, a autenticação está implementada e as 10 telas
-do protótipo do Stitch foram reproduzidas (Fases 0 a 3.1 do roadmap): RFs/RNFs importados
-(`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004 e ADR 0006),
-entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts`, login/refresh/logout via
-JWT em cookies httpOnly (`apps/api/src/auth/`), `AuthGuard`/`RolesGuard` globais, sessão protegida
-no front (`apps/web/src/middleware.ts`), interceptor de auditoria em `AuditLog`, e as telas em
+A fundação está pronta, o domínio está modelado, a autenticação está implementada, as 10 telas
+do protótipo do Stitch foram reproduzidas e já lêem/escrevem dado real (Fases 0 a 3.2 do roadmap):
+RFs/RNFs importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004
+e ADR 0006), entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts`
+(schemas 1:1 em `academico.ts`/`comunicacao.ts`/`agenda.ts`/`tenant.ts`, vistas compostas por tela
+em `views.ts`), login/refresh/logout via JWT em cookies httpOnly (`apps/api/src/auth/`),
+`AuthGuard`/`RolesGuard` globais, sessão protegida no front (`apps/web/src/middleware.ts`),
+interceptor de auditoria em `AuditLog` (com `tenantId` propagado), e as telas em
 `apps/web/src/app/(app)/` com a paleta e tipografia reais do protótipo (ver
-`docs/design-system.md`). **As telas usam dado mock** — a API ainda não tem controllers/services
-de domínio (Aluno, Nota, Recado etc.), só o schema e os contracts (Fase 1); ligar dado real é a
-Fase 3.2.
+`docs/design-system.md`) ligadas aos endpoints de domínio da API (`AlunosModule`,
+`ProfessorModule`, `RecadosModule`, `EventosModule`, `TenantsModule`, `ResponsavelModule`,
+`DashboardModule`) via Server Components (`apps/web/src/lib/server-api.ts`) e mutações client-side
+(`apps/web/src/lib/*-client.ts`). Formulários com validação client-side (Fase 3.3), estados de
+carregamento/vazio/erro mais elaborados (Fase 3.4) e revisão de acessibilidade (Fase 3.5) seguem
+pendentes.
 
 Antes de mexer no domínio, leia:
 
