@@ -30,14 +30,16 @@ antes do typecheck — os tipos do Prisma Client são gerados a partir do schema
 
 ## Estado do projeto
 
-A fundação está pronta, o domínio está modelado e a autenticação está implementada (Fases 0 a 2
-do roadmap): RFs/RNFs importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy
-decididos (ADR 0004 e ADR 0006), entidades em `schema.prisma` e schemas espelhados em
-`@arbora/contracts`, login/refresh/logout via JWT em cookies httpOnly (`apps/api/src/auth/`),
-`AuthGuard`/`RolesGuard` globais, sessão protegida no front (`apps/web/src/middleware.ts`) e
-interceptor de auditoria em `AuditLog`. O protótipo do Stitch ainda não foi acessado, então telas
-reais e tokens de design seguem pendentes (Fase 3) — a tela de login e a home atual são
-provisórias.
+A fundação está pronta, o domínio está modelado, a autenticação está implementada e as 10 telas
+do protótipo do Stitch foram reproduzidas (Fases 0 a 3.1 do roadmap): RFs/RNFs importados
+(`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004 e ADR 0006),
+entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts`, login/refresh/logout via
+JWT em cookies httpOnly (`apps/api/src/auth/`), `AuthGuard`/`RolesGuard` globais, sessão protegida
+no front (`apps/web/src/middleware.ts`), interceptor de auditoria em `AuditLog`, e as telas em
+`apps/web/src/app/(app)/` com a paleta e tipografia reais do protótipo (ver
+`docs/design-system.md`). **As telas usam dado mock** — a API ainda não tem controllers/services
+de domínio (Aluno, Nota, Recado etc.), só o schema e os contracts (Fase 1); ligar dado real é a
+Fase 3.2.
 
 Antes de mexer no domínio, leia:
 
