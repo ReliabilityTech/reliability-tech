@@ -1,34 +1,31 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens do Arbora.
- *
- * Verde institucional (#26734D) extraído do protótipo do Stitch em 2026-08-30
- * ("Portal Escolar Multi-tenant") — ver docs/design-system.md. O restante da
- * rampa é derivado desse valor (mesmo matiz, luminosidade/croma
- * proporcionais); tipografia e espaçamento ainda seguem o padrão do Tailwind,
- * o protótipo não especifica uma escala numérica própria.
+ * Design tokens do Arbora — Arbora Design System, lido diretamente do frame
+ * de estilo do protótipo do Stitch em 2026-08-30 ("Portal Escolar
+ * Multi-tenant"): Primary #26734D, Secondary #174D35, Tertiary #EAF5EF,
+ * Neutral #1F2933, tipografia Manrope. Ver docs/design-system.md.
  */
 @theme {
-  --color-brand-50: oklch(0.94 0.015 158);
-  --color-brand-100: oklch(0.91 0.03 158);
-  --color-brand-200: oklch(0.85 0.052 158);
-  --color-brand-300: oklch(0.77 0.082 158);
-  --color-brand-400: oklch(0.68 0.105 158);
-  --color-brand-500: oklch(0.59 0.112 158);
-  /* #26734D — verde institucional do Arbora Design System. */
-  --color-brand-600: oklch(0.5 0.097 158);
-  --color-brand-700: oklch(0.41 0.082 158);
-  --color-brand-800: oklch(0.33 0.06 158);
-  --color-brand-900: oklch(0.25 0.045 158);
+  --color-brand-50: oklch(0.9602 0.0141 162.47); /* Tertiary #EAF5EF */
+  --color-brand-100: oklch(0.92 0.03 161);
+  --color-brand-200: oklch(0.86 0.052 160);
+  --color-brand-300: oklch(0.78 0.078 159);
+  --color-brand-400: oklch(0.69 0.09 158.5);
+  --color-brand-500: oklch(0.59 0.095 158.2);
+  --color-brand-600: oklch(0.4978 0.0971 158.1); /* Primary #26734D */
+  --color-brand-700: oklch(0.44 0.084 159.4);
+  --color-brand-800: oklch(0.3774 0.0704 160.67); /* Secondary #174D35 */
+  --color-brand-900: oklch(0.3 0.055 162);
 
   /* Cores semânticas de estado — usadas por alertas e indicadores. */
-  --color-success: oklch(0.59 0.112 158);
+  --color-success: oklch(0.59 0.095 158.2);
   --color-warning: oklch(0.75 0.15 75);
   --color-danger: oklch(0.58 0.2 25);
   --color-info: oklch(0.62 0.13 250);
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    var(--font-manrope), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
 
   --radius-card: 0.75rem;
@@ -37,19 +34,20 @@
 /* Papéis de cor da interface. Trocar de tema = trocar estas variáveis. */
 :root {
   --color-surface: oklch(1 0 0);
-  --color-surface-muted: oklch(0.97 0.005 150);
-  --color-foreground: oklch(0.22 0.02 150);
-  --color-foreground-muted: oklch(0.5 0.02 150);
-  --color-border: oklch(0.9 0.01 150);
+  --color-surface-muted: var(--color-brand-50);
+  /* Neutral #1F2933 do Arbora Design System. */
+  --color-foreground: oklch(0.276 0.0233 248.68);
+  --color-foreground-muted: oklch(0.5 0.02 249);
+  --color-border: oklch(0.9 0.01 249);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-surface: oklch(0.19 0.02 150);
-    --color-surface-muted: oklch(0.24 0.02 150);
-    --color-foreground: oklch(0.96 0.01 150);
-    --color-foreground-muted: oklch(0.72 0.02 150);
-    --color-border: oklch(0.32 0.02 150);
+    --color-surface: oklch(0.19 0.02 249);
+    --color-surface-muted: oklch(0.24 0.02 249);
+    --color-foreground: oklch(0.96 0.01 249);
+    --color-foreground-muted: oklch(0.72 0.02 249);
+    --color-border: oklch(0.32 0.02 249);
   }
 }
 
