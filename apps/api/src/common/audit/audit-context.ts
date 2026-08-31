@@ -5,7 +5,7 @@ import { type Request } from 'express';
  * autor sozinho (ex.: `/auth/logout`, que é `@Public()` e não devolve corpo).
  * O handler chama `setAuditContext` antes de responder.
  */
-export type AuditContext = { userId?: string };
+export type AuditContext = { userId?: string; tenantId?: string };
 
 type RequestWithAuditContext = Request & { auditContext?: AuditContext };
 

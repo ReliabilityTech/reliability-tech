@@ -77,17 +77,22 @@ export class AuthService {
     return { tokens, user: stored.user };
   }
 
-  /** Retorna o id do usuário dono do token revogado, para o audit log (`@Public()` — sem `req.user`). */
-  async logout(rawRefreshToken: string): Promise<string | undefined> {
+  /** Retorna o dono do token revogado, para o audit log (`@Public()` — sem `req.user`). */
+  async logout(
+    rawRefreshToken: string,
+  ): Promise<{ userId: string; tenantId: string | null } | undefined> {
     const tokenHash = this.hashToken(rawRefreshToken);
-    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
     if (!stored || stored.revokedAt) return undefined;
 
     await this.prisma.refreshToken.update({
       where: { id: stored.id },
       data: { revokedAt: new Date() },
     });
-    return stored.userId;
+    return { userId: stored.userId, tenantId: stored.user.tenantId };
   }
 
   async me(userId: string): Promise<User> {

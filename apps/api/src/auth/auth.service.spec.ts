@@ -191,9 +191,13 @@ describe('AuthService', () => {
         id: 'rt-1',
         userId: 'user-1',
         revokedAt: null,
+        user: usuarioBase,
       });
 
-      await expect(service.logout('token-bruto')).resolves.toBe('user-1');
+      await expect(service.logout('token-bruto')).resolves.toEqual({
+        userId: 'user-1',
+        tenantId: usuarioBase.tenantId,
+      });
 
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
         where: { id: 'rt-1' },

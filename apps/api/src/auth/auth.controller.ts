@@ -72,8 +72,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoga o refresh token atual e limpa a sessão' })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_TOKEN_COOKIE];
-    const userId = raw ? await this.authService.logout(raw) : undefined;
-    if (userId) setAuditContext(req, { userId });
+    const revogado = raw ? await this.authService.logout(raw) : undefined;
+    if (revogado) {
+      setAuditContext(req, { userId: revogado.userId, tenantId: revogado.tenantId ?? undefined });
+    }
     this.clearSessionCookies(res);
   }
 
