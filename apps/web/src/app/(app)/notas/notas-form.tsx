@@ -101,60 +101,71 @@ export function NotasForm({
         </button>
       </div>
 
-      <div className="rounded-(--radius-card) overflow-x-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-foreground-muted)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Aluno</th>
-              <th className="px-4 py-3 font-medium">Nota (0-10)</th>
-              <th className="px-4 py-3 font-medium">Situação</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
-            {lancamentos.map((linha) => {
-              const valorAtual = valores[linha.alunoId] ?? '';
-              const situacao = situacaoLocal(valorAtual);
-              return (
-                <tr key={linha.alunoId}>
-                  <td className="px-4 py-3 font-medium">{linha.alunoNome}</td>
-                  <td className="px-4 py-3">
-                    <input
-                      value={valorAtual}
-                      onChange={(evento) => {
-                        setValores((atual) => ({ ...atual, [linha.alunoId]: evento.target.value }));
-                        setErros((atual) => {
-                          if (!(linha.alunoId in atual)) return atual;
-                          const { [linha.alunoId]: _removido, ...resto } = atual;
-                          return resto;
-                        });
-                      }}
-                      aria-invalid={Boolean(erros[linha.alunoId])}
-                      className={`rounded-(--radius-card) w-16 border px-2 py-1 text-sm ${
-                        erros[linha.alunoId]
-                          ? 'border-[var(--color-danger)]'
-                          : 'border-[var(--color-border)]'
-                      }`}
-                    />
-                    {erros[linha.alunoId] && (
-                      <p className="mt-1 text-xs text-[var(--color-danger)]">
-                        {erros[linha.alunoId]}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge tone={SITUACAO_TONE[situacao]}>
-                      {SITUACAO_LABEL[situacao]}
-                    </StatusBadge>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="mt-3 text-sm text-[var(--color-foreground-muted)]">
-        {lancamentos.length} aluno{lancamentos.length === 1 ? '' : 's'}
-      </p>
+      {lancamentos.length === 0 ? (
+        <p className="text-sm text-[var(--color-foreground-muted)]">
+          Nenhum aluno matriculado nesta turma.
+        </p>
+      ) : (
+        <div className="rounded-(--radius-card) overflow-x-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-foreground-muted)]">
+              <tr>
+                <th className="px-4 py-3 font-medium">Aluno</th>
+                <th className="px-4 py-3 font-medium">Nota (0-10)</th>
+                <th className="px-4 py-3 font-medium">Situação</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {lancamentos.map((linha) => {
+                const valorAtual = valores[linha.alunoId] ?? '';
+                const situacao = situacaoLocal(valorAtual);
+                return (
+                  <tr key={linha.alunoId}>
+                    <td className="px-4 py-3 font-medium">{linha.alunoNome}</td>
+                    <td className="px-4 py-3">
+                      <input
+                        value={valorAtual}
+                        onChange={(evento) => {
+                          setValores((atual) => ({
+                            ...atual,
+                            [linha.alunoId]: evento.target.value,
+                          }));
+                          setErros((atual) => {
+                            if (!(linha.alunoId in atual)) return atual;
+                            const { [linha.alunoId]: _removido, ...resto } = atual;
+                            return resto;
+                          });
+                        }}
+                        aria-invalid={Boolean(erros[linha.alunoId])}
+                        className={`rounded-(--radius-card) w-16 border px-2 py-1 text-sm ${
+                          erros[linha.alunoId]
+                            ? 'border-[var(--color-danger)]'
+                            : 'border-[var(--color-border)]'
+                        }`}
+                      />
+                      {erros[linha.alunoId] && (
+                        <p className="mt-1 text-xs text-[var(--color-danger)]">
+                          {erros[linha.alunoId]}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge tone={SITUACAO_TONE[situacao]}>
+                        {SITUACAO_LABEL[situacao]}
+                      </StatusBadge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {lancamentos.length > 0 && (
+        <p className="mt-3 text-sm text-[var(--color-foreground-muted)]">
+          {lancamentos.length} aluno{lancamentos.length === 1 ? '' : 's'}
+        </p>
+      )}
     </div>
   );
 }
