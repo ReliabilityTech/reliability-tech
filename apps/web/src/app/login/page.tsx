@@ -101,7 +101,7 @@ function LoginForm() {
                 />
                 Lembrar de mim
               </label>
-              <Link href="/recuperar-senha" className="font-medium text-[var(--color-brand-600)]">
+              <Link href="/recuperar-senha" className="font-medium text-[var(--color-link)]">
                 Esqueceu sua senha?
               </Link>
             </div>

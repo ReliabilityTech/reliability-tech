@@ -56,7 +56,7 @@ export default async function AlunosPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/alunos/${aluno.id}`}
-                        className="font-medium text-[var(--color-brand-600)]"
+                        className="font-medium text-[var(--color-link)]"
                       >
                         {aluno.nome}
                       </Link>

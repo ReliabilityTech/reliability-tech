@@ -94,7 +94,9 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
               }`}
             />
             {erros.titulo && (
-              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">{erros.titulo}</p>
+              <p role="alert" className="mt-1 text-xs font-normal text-[var(--color-danger)]">
+                {erros.titulo}
+              </p>
             )}
           </label>
 
@@ -111,7 +113,9 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
               }`}
             />
             {erros.corpo && (
-              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">{erros.corpo}</p>
+              <p role="alert" className="mt-1 text-xs font-normal text-[var(--color-danger)]">
+                {erros.corpo}
+              </p>
             )}
           </label>
 
@@ -142,14 +146,18 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
                 ))}
               </select>
               {erros.turmaId && (
-                <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">
+                <p role="alert" className="mt-1 text-xs font-normal text-[var(--color-danger)]">
                   {erros.turmaId}
                 </p>
               )}
             </label>
           )}
 
-          {erros._root && <p className="text-sm text-[var(--color-danger)]">{erros._root}</p>}
+          {erros._root && (
+            <p role="alert" className="text-sm text-[var(--color-danger)]">
+              {erros._root}
+            </p>
+          )}
 
           <div className="mt-2 flex justify-end gap-2">
             <button

@@ -25,7 +25,9 @@ export default function ErroApp({ error, reset }: { error: Error; reset: () => v
       <span className="bg-[var(--color-danger)]/15 rounded-full p-3 text-[var(--color-danger)]">
         <AlertTriangle className="h-6 w-6" aria-hidden />
       </span>
-      <p className="max-w-sm text-sm text-[var(--color-foreground-muted)]">{mensagem}</p>
+      <p role="alert" className="max-w-sm text-sm text-[var(--color-foreground-muted)]">
+        {mensagem}
+      </p>
       <button
         type="button"
         onClick={reset}

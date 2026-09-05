@@ -43,7 +43,7 @@ ADR 0004). Outras dívidas na tabela ao final deste documento.
 | 3.2 | Camada de dados no front (TanStack Query ou Server Components + cache) | ✅ Concluído em 2026-08-31 — endpoints de domínio na API (`AlunosModule`, `ProfessorModule`, `RecadosModule`, `EventosModule`, `TenantsModule`, `ResponsavelModule`, `DashboardModule`) e as 10 telas lendo/escrevendo dado real via Server Components + `apiFetch`/`serverFetch` |
 | 3.3 | Formulários com validação a partir dos schemas de `@arbora/contracts` | ✅ Concluído em 2026-09-05 — `criarRecadoRequestSchema`, `criarEventoRequestSchema` e `lancarNotaRequestSchema` validados no client antes do envio (`safeParse` + `primeiroErroPorCampo`), com mensagens em pt-BR nos próprios schemas |
 | 3.4 | Estados de carregamento, vazio e erro em todas as listagens | ✅ Concluído em 2026-09-05 — `loading.tsx` por rota (esqueletos em `components/skeleton.tsx`), `error.tsx` único em `(app)/` com "Tentar novamente", mensagens de "nenhum X ainda" nas listagens que podiam vir vazias |
-| 3.5 | Revisão de acessibilidade (checklist em `docs/design-system.md`) | Pendente |
+| 3.5 | Revisão de acessibilidade (checklist em `docs/design-system.md`) | ✅ Concluído em 2026-09-05 — contraste AA/AAA auditado e corrigido, rótulos e `aria-label` em todo campo, `role="alert"` nos erros de formulário, mais um seletor de tema (claro/escuro/alto contraste) que não estava no escopo original — ver [design-system.md](design-system.md#acessibilidade) |
 
 ## Fase 4 — Qualidade
 

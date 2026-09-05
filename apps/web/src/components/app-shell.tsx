@@ -12,6 +12,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { LogoutButton } from './logout-button';
+import { ThemeToggle } from './theme-toggle';
 
 type NavItem = {
   href: string;
@@ -68,6 +69,9 @@ export function AppShell({ user, children }: { user: User; children: ReactNode }
         <div className="border-t border-[var(--color-brand-700)] pt-4 text-sm">
           <p className="font-medium">{user.name}</p>
           <p className="mb-3 text-[var(--color-brand-100)]">{user.role}</p>
+          <div className="mb-3">
+            <ThemeToggle />
+          </div>
           <LogoutButton />
         </div>
       </aside>

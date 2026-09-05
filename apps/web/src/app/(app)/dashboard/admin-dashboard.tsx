@@ -48,7 +48,7 @@ export function AdminDashboard({ data }: { data: DashboardAdminResponse }) {
         <div className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] p-4 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold">Atenção necessária</h2>
-            <a href="/alunos" className="text-sm font-medium text-[var(--color-brand-600)]">
+            <a href="/alunos" className="text-sm font-medium text-[var(--color-link)]">
               Ver todos
             </a>
           </div>

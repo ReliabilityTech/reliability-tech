@@ -14,7 +14,7 @@ export default function RecuperarSenhaPage() {
         Essa funcionalidade ainda não está disponível. Fale com a secretaria da sua escola para
         redefinir sua senha.
       </p>
-      <Link href="/login" className="mt-6 font-medium text-[var(--color-brand-600)]">
+      <Link href="/login" className="mt-6 font-medium text-[var(--color-link)]">
         Voltar para o login
       </Link>
     </main>

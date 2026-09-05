@@ -30,24 +30,26 @@ antes do typecheck — os tipos do Prisma Client são gerados a partir do schema
 
 ## Estado do projeto
 
-A fundação está pronta, o domínio está modelado, a autenticação está implementada, as 10 telas
-do protótipo do Stitch foram reproduzidas e já lêem/escrevem dado real com validação client-side
-e estados de carregamento/vazio/erro (Fases 0 a 3.4 do roadmap): RFs/RNFs importados
-(`docs/requisitos/`), papéis e estratégia de multi-tenancy decididos (ADR 0004 e ADR 0006),
-entidades em `schema.prisma` e schemas espelhados em `@arbora/contracts` (schemas 1:1 em
-`academico.ts`/`comunicacao.ts`/`agenda.ts`/`tenant.ts`, vistas compostas por tela em
-`views.ts`), login/refresh/logout via JWT em cookies httpOnly (`apps/api/src/auth/`),
-`AuthGuard`/`RolesGuard` globais, sessão protegida no front (`apps/web/src/middleware.ts`),
-interceptor de auditoria em `AuditLog` (com `tenantId` propagado), e as telas em
-`apps/web/src/app/(app)/` com a paleta e tipografia reais do protótipo (ver
-`docs/design-system.md`) ligadas aos endpoints de domínio da API (`AlunosModule`,
+A fundação está pronta, o domínio está modelado, a autenticação está implementada, e as 10 telas
+do protótipo do Stitch foram reproduzidas, ligadas a dado real, com validação client-side,
+estados de carregamento/vazio/erro e revisão de acessibilidade — **Fase 3 completa** (Fases 0 a
+3.5 do roadmap): RFs/RNFs importados (`docs/requisitos/`), papéis e estratégia de multi-tenancy
+decididos (ADR 0004 e ADR 0006), entidades em `schema.prisma` e schemas espelhados em
+`@arbora/contracts` (schemas 1:1 em `academico.ts`/`comunicacao.ts`/`agenda.ts`/`tenant.ts`,
+vistas compostas por tela em `views.ts`), login/refresh/logout via JWT em cookies httpOnly
+(`apps/api/src/auth/`), `AuthGuard`/`RolesGuard` globais, sessão protegida no front
+(`apps/web/src/middleware.ts`), interceptor de auditoria em `AuditLog` (com `tenantId`
+propagado), e as telas em `apps/web/src/app/(app)/` com a paleta e tipografia reais do protótipo
+(ver `docs/design-system.md`) ligadas aos endpoints de domínio da API (`AlunosModule`,
 `ProfessorModule`, `RecadosModule`, `EventosModule`, `TenantsModule`, `ResponsavelModule`,
 `DashboardModule`) via Server Components (`apps/web/src/lib/server-api.ts`) e mutações client-side
 (`apps/web/src/lib/*-client.ts`) que validam o payload contra o schema do `@arbora/contracts`
 antes de qualquer chamada de rede (`apps/web/src/lib/form-errors.ts`). Cada rota tem seu
 `loading.tsx` (esqueletos em `apps/web/src/components/skeleton.tsx`) e um `error.tsx` único em
-`(app)/` cobre falhas de rede/API de qualquer página com "Tentar novamente". Revisão de
-acessibilidade (Fase 3.5) segue pendente.
+`(app)/` cobre falhas de rede/API de qualquer página com "Tentar novamente". Contraste
+AA/AAA auditado e corrigido por tema, todo campo com rótulo/`aria-label`, erros de formulário
+com `role="alert"`, e um seletor de tema claro/escuro/alto contraste (`ThemeToggle`,
+`data-theme` em `<html>`) — ver `docs/design-system.md#acessibilidade`.
 
 Antes de mexer no domínio, leia:
 

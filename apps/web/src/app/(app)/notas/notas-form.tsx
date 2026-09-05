@@ -90,7 +90,11 @@ export function NotasForm({
   return (
     <div>
       <div className="mb-4 flex items-center justify-end gap-2">
-        {erros._root && <p className="mr-auto text-sm text-[var(--color-danger)]">{erros._root}</p>}
+        {erros._root && (
+          <p role="alert" className="mr-auto text-sm text-[var(--color-danger)]">
+            {erros._root}
+          </p>
+        )}
         <button
           type="button"
           onClick={() => void handlePublicar()}
@@ -136,6 +140,7 @@ export function NotasForm({
                             return resto;
                           });
                         }}
+                        aria-label={`Nota de ${linha.alunoNome}`}
                         aria-invalid={Boolean(erros[linha.alunoId])}
                         className={`rounded-(--radius-card) w-16 border px-2 py-1 text-sm ${
                           erros[linha.alunoId]
@@ -144,7 +149,7 @@ export function NotasForm({
                         }`}
                       />
                       {erros[linha.alunoId] && (
-                        <p className="mt-1 text-xs text-[var(--color-danger)]">
+                        <p role="alert" className="mt-1 text-xs text-[var(--color-danger)]">
                           {erros[linha.alunoId]}
                         </p>
                       )}

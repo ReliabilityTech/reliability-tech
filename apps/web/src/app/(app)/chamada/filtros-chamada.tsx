@@ -27,6 +27,7 @@ export function FiltrosChamada({
       <select
         value={turmaDisciplinaId}
         onChange={(evento) => atualizar('turmaDisciplinaId', evento.target.value)}
+        aria-label="Turma"
         className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
       >
         {turmas.map((turma) => (
@@ -39,6 +40,7 @@ export function FiltrosChamada({
         type="date"
         value={data}
         onChange={(evento) => atualizar('data', evento.target.value)}
+        aria-label="Data da chamada"
         className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
       />
     </div>

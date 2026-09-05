@@ -38,6 +38,7 @@ export function FiltrosNotas({
       <select
         value={turmaDisciplinaId}
         onChange={(evento) => atualizar('turmaDisciplinaId', evento.target.value)}
+        aria-label="Turma"
         className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
       >
         {turmas.map((turma) => (
@@ -49,6 +50,7 @@ export function FiltrosNotas({
       <select
         value={periodoLetivoId}
         onChange={(evento) => atualizar('periodoLetivoId', evento.target.value)}
+        aria-label="Período letivo"
         className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
       >
         {periodos.map((periodo) => (

@@ -18,10 +18,15 @@
   --color-brand-800: oklch(0.3774 0.0704 160.67); /* Secondary #174D35 */
   --color-brand-900: oklch(0.3 0.055 162);
 
-  /* Cores semânticas de estado — usadas por alertas e indicadores. */
-  --color-success: oklch(0.59 0.095 158.2);
-  --color-warning: oklch(0.75 0.15 75);
-  --color-danger: oklch(0.58 0.2 25);
+  /*
+   * Cores semânticas de estado — usadas por alertas, indicadores e badges.
+   * Valores calibrados (não os tons "soltos" do protótipo) pra bater 4.5:1
+   * contra --color-surface E contra o próprio badge (fundo na mesma cor a
+   * 15% de opacidade) — ver auditoria em docs/design-system.md#acessibilidade.
+   */
+  --color-success: oklch(0.5 0.095 158.2);
+  --color-warning: oklch(0.52 0.15 75);
+  --color-danger: oklch(0.53 0.2 25);
   --color-info: oklch(0.62 0.13 250);
 
   --font-sans:
@@ -31,24 +36,77 @@
   --radius-card: 0.75rem;
 }
 
-/* Papéis de cor da interface. Trocar de tema = trocar estas variáveis. */
+/*
+ * Papéis de cor da interface. Trocar de tema = trocar estas variáveis.
+ * --color-link fica aqui (não em @theme) porque é um papel de uso, não uma
+ * cor de paleta: brand-600 serve de fundo de botão (onde branco em cima já
+ * contrasta bem) mas como texto direto sobre --color-surface precisa de um
+ * tom diferente por tema — ver auditoria em docs/design-system.md#acessibilidade.
+ */
 :root {
+  color-scheme: light dark;
   --color-surface: oklch(1 0 0);
   --color-surface-muted: var(--color-brand-50);
   /* Neutral #1F2933 do Arbora Design System. */
   --color-foreground: oklch(0.276 0.0233 248.68);
   --color-foreground-muted: oklch(0.5 0.02 249);
   --color-border: oklch(0.9 0.01 249);
+  --color-link: var(--color-brand-600);
 }
 
+/*
+ * Tema explícito escolhido pelo usuário (ThemeToggle, em localStorage) tem
+ * prioridade sobre a preferência do sistema — por isso o `:not([data-theme])`
+ * abaixo: só segue o SO enquanto ninguém escolheu nada.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --color-surface: oklch(0.19 0.02 249);
     --color-surface-muted: oklch(0.24 0.02 249);
     --color-foreground: oklch(0.96 0.01 249);
     --color-foreground-muted: oklch(0.72 0.02 249);
     --color-border: oklch(0.32 0.02 249);
+    --color-success: oklch(0.63 0.095 158.2);
+    --color-warning: oklch(0.75 0.15 75);
+    --color-danger: oklch(0.66 0.2 25);
+    --color-link: oklch(0.5878 0.0971 158.1);
   }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-surface: oklch(0.19 0.02 249);
+  --color-surface-muted: oklch(0.24 0.02 249);
+  --color-foreground: oklch(0.96 0.01 249);
+  --color-foreground-muted: oklch(0.72 0.02 249);
+  --color-border: oklch(0.32 0.02 249);
+  --color-success: oklch(0.63 0.095 158.2);
+  --color-warning: oklch(0.75 0.15 75);
+  --color-danger: oklch(0.66 0.2 25);
+  --color-link: oklch(0.5878 0.0971 158.1);
+}
+
+/*
+ * Alto contraste: paleta clara com todo par texto/fundo em AAA (≥7:1), não
+ * só AA — foreground-muted deixa de ser "sutil" de propósito, e a borda
+ * fica bem mais visível. Cores de marca escurecidas ficam quase pretas
+ * quando usadas como texto; é a troca esperada num modo de alto contraste.
+ */
+:root[data-theme='high-contrast'] {
+  color-scheme: light;
+  --color-surface: oklch(1 0 0);
+  --color-surface-muted: oklch(0.95 0 0);
+  --color-foreground: oklch(0.1 0 0);
+  --color-foreground-muted: oklch(0.32 0.02 249);
+  --color-border: oklch(0.55 0.02 249);
+  --color-success: oklch(0.39 0.095 158.2);
+  --color-warning: oklch(0.4 0.15 75);
+  --color-danger: oklch(0.385 0.2 25);
+  --color-link: oklch(0.35 0.0971 158.1);
 }
 
 @layer base {
@@ -63,5 +121,11 @@
   :focus-visible {
     outline: 2px solid var(--color-brand-500);
     outline-offset: 2px;
+  }
+
+  /* Alto contraste também reforça o próprio indicador de foco. */
+  :root[data-theme='high-contrast'] :focus-visible {
+    outline-width: 3px;
+    outline-color: var(--color-link);
   }
 }

@@ -96,10 +96,9 @@ componente nenhum.
 Feito: paleta exata (`#26734D`/`#174D35`/`#EAF5EF`/`#1F2933`) e tipografia (Manrope) em
 `globals.css`/`layout.tsx`; as 10 telas reproduzidas com dado mock. Falta:
 
-1. Confirmar contraste dos pares texto/fundo com o verde real — mínimo **4.5:1** para texto
-   normal e **3:1** para texto grande (WCAG 2.1 AA). Não verificado ainda.
-2. Camada de dados real (roadmap Fase 3.2) — hoje cada tela usa um array estático no topo do
-   arquivo, claramente marcado, no lugar de chamar a API.
+1. ✅ Contraste dos pares texto/fundo auditado e corrigido (Fase 3.5) — ver
+   [Acessibilidade](#acessibilidade).
+2. ✅ Camada de dados real (Fase 3.2) — as 10 telas chamam a API de verdade.
 3. Dashboard do responsável (mobile) não foi reexaminado em detalhe — a versão implementada é uma
    composição razoável a partir da descrição textual do protótipo, não de pixel.
 
@@ -121,14 +120,43 @@ Enquanto houver um único app consumidor, os componentes ficam em `apps/web`. Ex
 Já configurado:
 
 - `eslint-plugin-jsx-a11y` em modo recomendado, rodando no `pnpm lint`.
-- `:focus-visible` com contorno visível, em `globals.css`.
+- `:focus-visible` com contorno visível, em `globals.css` (mais forte no tema alto contraste).
 - `lang="pt-BR"` no documento.
 
-A cumprir:
+Checklist da Fase 3.5 (revisão de acessibilidade):
 
-- [ ] Contraste AA em todos os pares de cor com a paleta real.
-- [ ] Navegação completa por teclado, sem armadilha de foco.
-- [ ] Rótulos associados a todos os campos de formulário.
-- [ ] Erros de formulário anunciados por leitores de tela (`aria-live`).
-- [ ] Nenhuma informação transmitida **apenas** por cor (os badges de status hoje só usam cor +
-      texto, o que já atende, mas revisar ao evoluir).
+- [x] **Contraste AA em todos os pares de cor com a paleta real.** Auditoria feita medindo a
+      cor computada de verdade no navegador (não o valor "de olho" do protótipo) — conversão
+      OKLCH → sRGB + fórmula de luminância relativa do WCAG, contraste calculado tanto contra
+      `--color-surface` quanto contra o próprio badge (fundo na mesma cor a 15% de opacidade,
+      que é mais exigente que a superfície pura). Pares que não batiam 4.5:1 tiveram
+      `--color-danger`, `--color-success` e `--color-warning` recalibrados (valores diferentes
+      por tema — dark precisa de um verde/vermelho mais claro que o light pra a mesma
+      legibilidade) e ganharam um `--color-link` novo (`text-[var(--color-brand-600)]` como
+      link direto sobre `--color-surface` não passava em dark; como fundo de botão continua
+      brand-600 normalmente, porque texto branco em cima já contrasta bem).
+- [x] **Navegação completa por teclado, sem armadilha de foco.** Não precisou de trabalho novo:
+      toda a interface usa elementos nativos (`button`, `select`, `input`, `<dialog>` +
+      `showModal()`, `Link`) — nenhum `<div onClick>` sem equivalente de teclado. `<dialog>`
+      nativo já faz focus trap e fecha com Esc de graça.
+- [x] **Rótulos associados a todos os campos de formulário.** A maioria já usava `<label>`
+      envolvendo o campo; os que não tinham rótulo visível (busca da chamada, os `<select>` de
+      turma/período/data nos filtros, a nota por aluno em `notas-form.tsx`) ganharam
+      `aria-label`.
+- [x] **Erros de formulário anunciados por leitores de tela.** `role="alert"` em toda mensagem
+      de erro de formulário (os 3 diálogos/forms de escrita da Fase 3.3 e o `error.tsx` da
+      Fase 3.4) — mesmo padrão que a tela de login já usava desde a Fase 2.
+- [x] Nenhuma informação transmitida **apenas** por cor — os badges de status usam cor + texto.
+
+### Temas: claro, escuro e alto contraste
+
+`ThemeToggle` (`apps/web/src/components/theme-toggle.tsx`, no rodapé do menu lateral) deixa
+escolher entre Automático (segue `prefers-color-scheme`, o padrão), Claro, Escuro e Alto
+contraste. A escolha vai pro `localStorage` (`arbora-theme`) e vira o atributo `data-theme` em
+`<html>`; um script inline em `apps/web/src/app/layout.tsx` aplica esse atributo antes da
+primeira pintura pra não piscar o tema errado.
+
+`data-theme='high-contrast'` não é só o tema claro com mais contraste — cada cor de texto foi
+recalculada pra bater **AAA (≥7:1)**, não só AA, incluindo contra o próprio fundo do badge; a
+borda fica bem mais visível (`oklch(0.55 0.02 249)` em vez de `oklch(0.9 0.01 249)`) e o
+indicador de foco fica mais grosso. Ver os blocos `:root[data-theme='...']` em `globals.css`.

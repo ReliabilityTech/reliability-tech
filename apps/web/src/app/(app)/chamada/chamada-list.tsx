@@ -75,7 +75,11 @@ export function ChamadaList({
           </button>
         </div>
       </header>
-      {erro && <p className="mb-4 text-sm text-[var(--color-danger)]">{erro}</p>}
+      {erro && (
+        <p role="alert" className="mb-4 text-sm text-[var(--color-danger)]">
+          {erro}
+        </p>
+      )}
 
       <div className="mb-4 flex items-center gap-3">
         <div className="relative flex-1">
@@ -88,6 +92,7 @@ export function ChamadaList({
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
             placeholder="Buscar aluno..."
+            aria-label="Buscar aluno"
             className="rounded-(--radius-card) w-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-3 text-sm"
           />
         </div>
