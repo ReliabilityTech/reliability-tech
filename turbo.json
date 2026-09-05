@@ -30,6 +30,10 @@
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"]
     },
+    "test:integration": {
+      "cache": false,
+      "outputs": []
+    },
     "clean": {
       "cache": false
     },

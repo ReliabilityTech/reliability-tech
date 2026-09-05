@@ -53,8 +53,11 @@ com `role="alert"`, e um seletor de tema claro/escuro/alto contraste (`ThemeTogg
 
 Fase 4.1 (Testes E2E com Playwright) também está concluída: `apps/web/e2e/` cobre login, as telas
 do admin, o lançamento de notas/chamada do professor e o painel do super-admin, autenticados via
-`storageState` por papel (`pnpm --filter @arbora/web test:e2e`). 4.2 a 4.5 (Testcontainers,
-cobertura mínima no CI, rastreabilidade e testes de componente) seguem pendentes.
+`storageState` por papel (`pnpm --filter @arbora/web test:e2e`). Fase 4.2 (Testes de integração com
+Testcontainers) também: `apps/api/test/integration/` sobe um Postgres efêmero de verdade, roda as
+migrações reais e testa isolamento entre tenants sem mockar o Prisma (`pnpm --filter @arbora/api
+test:integration`). 4.3 a 4.5 (cobertura mínima no CI, rastreabilidade e testes de componente)
+seguem pendentes.
 
 Antes de mexer no domínio, leia:
 
