@@ -51,6 +51,11 @@ AA/AAA auditado e corrigido por tema, todo campo com rótulo/`aria-label`, erros
 com `role="alert"`, e um seletor de tema claro/escuro/alto contraste (`ThemeToggle`,
 `data-theme` em `<html>`) — ver `docs/design-system.md#acessibilidade`.
 
+Fase 4.1 (Testes E2E com Playwright) também está concluída: `apps/web/e2e/` cobre login, as telas
+do admin, o lançamento de notas/chamada do professor e o painel do super-admin, autenticados via
+`storageState` por papel (`pnpm --filter @arbora/web test:e2e`). 4.2 a 4.5 (Testcontainers,
+cobertura mínima no CI, rastreabilidade e testes de componente) seguem pendentes.
+
 Antes de mexer no domínio, leia:
 
 - `docs/requisitos/funcionais.md` e `docs/requisitos/nao-funcionais.md` — RF-NNN/RNF-NNN, fonte

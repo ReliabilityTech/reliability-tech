@@ -47,13 +47,13 @@ ADR 0004). Outras dívidas na tabela ao final deste documento.
 
 ## Fase 4 — Qualidade
 
-| # | Tarefa |
-| - | ------ |
-| 4.1 | Testes E2E com Playwright (Chromium já está no ambiente) |
-| 4.2 | Testes de integração da API com banco efêmero (Testcontainers) |
-| 4.3 | Limite mínimo de cobertura no CI |
-| 4.4 | Preencher `docs/requisitos/rastreabilidade.md` |
-| 4.5 | Testes de componente no front (Vitest + Testing Library) |
+| # | Tarefa | Status |
+| - | ------ | ------ |
+| 4.1 | Testes E2E com Playwright (Chromium já está no ambiente) | ✅ Concluído em 2026-09-05 — `apps/web/e2e/` cobre login, dashboard/alunos/comunicados do admin, lançamento de notas e chamada do professor, e o painel do super-admin, autenticados via `storageState` por papel; `pnpm --filter @arbora/web test:e2e` reseta e resemeia o banco antes da suíte. A depuração revelou e corrigiu 3 bugs reais: `keepAliveTimeout`/`headersTimeout` do Nest não configurados (`fetch failed`/ECONNRESET esporádico em Server Components sob idle — `apps/api/src/main.ts`), timeout curto demais para o primeiro login após boot a frio do `next dev` (`apps/web/e2e/auth.setup.ts`), e um bug de teste (`page.waitForURL` não reancora em transições client-side do App Router; trocado por `expect(page).toHaveURL`) |
+| 4.2 | Testes de integração da API com banco efêmero (Testcontainers) | Pendente |
+| 4.3 | Limite mínimo de cobertura no CI | Pendente |
+| 4.4 | Preencher `docs/requisitos/rastreabilidade.md` | Pendente |
+| 4.5 | Testes de componente no front (Vitest + Testing Library) | Pendente |
 
 ## Fase 5 — Operação
 

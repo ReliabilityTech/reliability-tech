@@ -44,6 +44,16 @@ async function bootstrap(): Promise<void> {
     SwaggerModule.setup(`${prefix}/docs`, app, document);
   }
 
+  // O timeout padrão do Node (5s) fica perto demais do keep-alive do pool de
+  // fetch do Next.js (server-api.ts): sob idle entre requisições, o cliente
+  // pode reusar um socket que o servidor acabou de fechar, e a próxima
+  // requisição estoura com "fetch failed" (ECONNRESET) do lado do Next —
+  // visto em produção sintética via E2E (Fase 4.1). headersTimeout precisa
+  // ficar acima de keepAliveTimeout (exigência do Node).
+  const httpServer = app.getHttpServer() as { keepAliveTimeout: number; headersTimeout: number };
+  httpServer.keepAliveTimeout = 65_000;
+  httpServer.headersTimeout = 66_000;
+
   const port = config.get('PORT', { infer: true });
   await app.listen(port, '0.0.0.0');
 }

@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@arbora/contracts": "workspace:*",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@arbora/eslint-config": "workspace:*",
     "@arbora/tsconfig": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.10",
