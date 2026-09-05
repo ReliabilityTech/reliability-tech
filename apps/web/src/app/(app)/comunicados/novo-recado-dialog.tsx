@@ -1,10 +1,15 @@
 'use client';
 
-import { type RecadoDestinatario, type TurmaDisciplinaResumo } from '@arbora/contracts';
+import {
+  criarRecadoRequestSchema,
+  type RecadoDestinatario,
+  type TurmaDisciplinaResumo,
+} from '@arbora/contracts';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useRef, useState } from 'react';
 
+import { primeiroErroPorCampo } from '@/lib/form-errors';
 import { criarRecado } from '@/lib/recados-client';
 
 export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }) {
@@ -15,32 +20,45 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
   const [destinatario, setDestinatario] = useState<RecadoDestinatario>('TODA_INSTITUICAO');
   const [turmaDisciplinaId, setTurmaDisciplinaId] = useState(turmas[0]?.id ?? '');
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<Record<string, string>>({});
 
   function limparEAbrir(): void {
     setTitulo('');
     setCorpo('');
     setDestinatario('TODA_INSTITUICAO');
-    setErro(null);
+    setErros({});
     dialogRef.current?.showModal();
   }
 
   async function handleSubmit(evento: FormEvent): Promise<void> {
     evento.preventDefault();
+    setErros({});
+
+    const turmaSelecionada = turmas.find((turma) => turma.id === turmaDisciplinaId);
+    if (destinatario === 'TURMA' && !turmaSelecionada) {
+      setErros({ turmaId: 'Selecione uma turma' });
+      return;
+    }
+
+    const payload = {
+      titulo,
+      corpo,
+      destinatario,
+      turmaId: destinatario === 'TURMA' ? turmaSelecionada?.turmaId : undefined,
+    };
+    const validado = criarRecadoRequestSchema.safeParse(payload);
+    if (!validado.success) {
+      setErros(primeiroErroPorCampo(validado.error.issues));
+      return;
+    }
+
     setEnviando(true);
-    setErro(null);
     try {
-      const turmaSelecionada = turmas.find((turma) => turma.id === turmaDisciplinaId);
-      await criarRecado({
-        titulo,
-        corpo,
-        destinatario,
-        turmaId: destinatario === 'TURMA' ? turmaSelecionada?.turmaId : undefined,
-      });
+      await criarRecado(validado.data);
       dialogRef.current?.close();
       router.refresh();
     } catch {
-      setErro('Não foi possível publicar o comunicado. Tente novamente.');
+      setErros({ _root: 'Não foi possível publicar o comunicado. Tente novamente.' });
     } finally {
       setEnviando(false);
     }
@@ -70,8 +88,14 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
               required
               value={titulo}
               onChange={(evento) => setTitulo(evento.target.value)}
-              className="rounded-(--radius-card) mt-1 w-full border border-[var(--color-border)] px-3 py-2 text-sm font-normal"
+              aria-invalid={Boolean(erros.titulo)}
+              className={`rounded-(--radius-card) mt-1 w-full border px-3 py-2 text-sm font-normal ${
+                erros.titulo ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'
+              }`}
             />
+            {erros.titulo && (
+              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">{erros.titulo}</p>
+            )}
           </label>
 
           <label className="text-sm font-medium">
@@ -81,8 +105,14 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
               rows={4}
               value={corpo}
               onChange={(evento) => setCorpo(evento.target.value)}
-              className="rounded-(--radius-card) mt-1 w-full border border-[var(--color-border)] px-3 py-2 text-sm font-normal"
+              aria-invalid={Boolean(erros.corpo)}
+              className={`rounded-(--radius-card) mt-1 w-full border px-3 py-2 text-sm font-normal ${
+                erros.corpo ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'
+              }`}
             />
+            {erros.corpo && (
+              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">{erros.corpo}</p>
+            )}
           </label>
 
           <label className="text-sm font-medium">
@@ -111,10 +141,15 @@ export function NovoRecadoDialog({ turmas }: { turmas: TurmaDisciplinaResumo[] }
                   </option>
                 ))}
               </select>
+              {erros.turmaId && (
+                <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">
+                  {erros.turmaId}
+                </p>
+              )}
             </label>
           )}
 
-          {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
+          {erros._root && <p className="text-sm text-[var(--color-danger)]">{erros._root}</p>}
 
           <div className="mt-2 flex justify-end gap-2">
             <button

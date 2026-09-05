@@ -1,6 +1,11 @@
 'use client';
 
-import { type NotaLancamentoItem, type SituacaoNota } from '@arbora/contracts';
+import {
+  type LancarNotaRequest,
+  lancarNotaRequestSchema,
+  type NotaLancamentoItem,
+  type SituacaoNota,
+} from '@arbora/contracts';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -41,25 +46,42 @@ export function NotasForm({
     Object.fromEntries(lancamentos.map((item) => [item.alunoId, item.valor?.toString() ?? ''])),
   );
   const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<Record<string, string>>({});
 
   async function handlePublicar(): Promise<void> {
-    setSalvando(true);
-    setErro(null);
-    try {
-      const pendentes = lancamentos
-        .map((item) => ({ alunoId: item.alunoId, texto: valores[item.alunoId] ?? '' }))
-        .filter(({ texto }) => texto.trim() !== '')
-        .map(({ alunoId, texto }) => ({ alunoId, valor: Number(texto.replace(',', '.')) }));
+    setErros({});
 
-      await Promise.all(
-        pendentes.map(({ alunoId, valor }) =>
-          lancarNota({ alunoId, turmaDisciplinaId, periodoLetivoId, valor }),
-        ),
-      );
+    const candidatos = lancamentos
+      .map((item) => ({ alunoId: item.alunoId, texto: valores[item.alunoId] ?? '' }))
+      .filter(({ texto }) => texto.trim() !== '')
+      .map(({ alunoId, texto }) => ({
+        alunoId,
+        turmaDisciplinaId,
+        periodoLetivoId,
+        valor: Number(texto.replace(',', '.')),
+      }));
+
+    const errosPorAluno: Record<string, string> = {};
+    const pendentes: LancarNotaRequest[] = [];
+    for (const candidato of candidatos) {
+      const validado = lancarNotaRequestSchema.safeParse(candidato);
+      if (validado.success) {
+        pendentes.push(validado.data);
+      } else {
+        errosPorAluno[candidato.alunoId] = validado.error.issues[0]?.message ?? 'Nota inválida';
+      }
+    }
+    if (Object.keys(errosPorAluno).length > 0) {
+      setErros(errosPorAluno);
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      await Promise.all(pendentes.map((nota) => lancarNota(nota)));
       router.refresh();
     } catch {
-      setErro('Não foi possível salvar as notas. Tente novamente.');
+      setErros({ _root: 'Não foi possível salvar as notas. Tente novamente.' });
     } finally {
       setSalvando(false);
     }
@@ -68,7 +90,7 @@ export function NotasForm({
   return (
     <div>
       <div className="mb-4 flex items-center justify-end gap-2">
-        {erro && <p className="mr-auto text-sm text-[var(--color-danger)]">{erro}</p>}
+        {erros._root && <p className="mr-auto text-sm text-[var(--color-danger)]">{erros._root}</p>}
         <button
           type="button"
           onClick={() => void handlePublicar()}
@@ -98,11 +120,26 @@ export function NotasForm({
                   <td className="px-4 py-3">
                     <input
                       value={valorAtual}
-                      onChange={(evento) =>
-                        setValores((atual) => ({ ...atual, [linha.alunoId]: evento.target.value }))
-                      }
-                      className="rounded-(--radius-card) w-16 border border-[var(--color-border)] px-2 py-1 text-sm"
+                      onChange={(evento) => {
+                        setValores((atual) => ({ ...atual, [linha.alunoId]: evento.target.value }));
+                        setErros((atual) => {
+                          if (!(linha.alunoId in atual)) return atual;
+                          const { [linha.alunoId]: _removido, ...resto } = atual;
+                          return resto;
+                        });
+                      }}
+                      aria-invalid={Boolean(erros[linha.alunoId])}
+                      className={`rounded-(--radius-card) w-16 border px-2 py-1 text-sm ${
+                        erros[linha.alunoId]
+                          ? 'border-[var(--color-danger)]'
+                          : 'border-[var(--color-border)]'
+                      }`}
                     />
+                    {erros[linha.alunoId] && (
+                      <p className="mt-1 text-xs text-[var(--color-danger)]">
+                        {erros[linha.alunoId]}
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge tone={SITUACAO_TONE[situacao]}>

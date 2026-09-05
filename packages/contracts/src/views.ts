@@ -92,7 +92,10 @@ export const lancarNotaRequestSchema = z.object({
   alunoId: idSchema,
   turmaDisciplinaId: idSchema,
   periodoLetivoId: idSchema,
-  valor: z.number().min(0).max(10),
+  valor: z
+    .number({ invalid_type_error: 'Informe um número' })
+    .min(0, 'A nota não pode ser negativa')
+    .max(10, 'A nota máxima é 10'),
 });
 export type LancarNotaRequest = z.infer<typeof lancarNotaRequestSchema>;
 
@@ -126,8 +129,12 @@ export const recadoListItemSchema = z.object({
 export type RecadoListItem = z.infer<typeof recadoListItemSchema>;
 
 export const criarRecadoRequestSchema = z.object({
-  titulo: z.string().trim().min(1).max(200),
-  corpo: z.string().trim().min(1),
+  titulo: z
+    .string()
+    .trim()
+    .min(1, 'Informe um título')
+    .max(200, 'O título pode ter no máximo 200 caracteres'),
+  corpo: z.string().trim().min(1, 'Informe a mensagem'),
   destinatario: recadoDestinatarioSchema,
   turmaId: idSchema.nullable().optional(),
   alunoId: idSchema.nullable().optional(),
@@ -149,7 +156,11 @@ export const eventoCalendarioSchema = z.object({
 export type EventoCalendario = z.infer<typeof eventoCalendarioSchema>;
 
 export const criarEventoRequestSchema = z.object({
-  titulo: z.string().trim().min(1).max(200),
+  titulo: z
+    .string()
+    .trim()
+    .min(1, 'Informe um título')
+    .max(200, 'O título pode ter no máximo 200 caracteres'),
   descricao: z.string().trim().nullable().optional(),
   tipo: eventoTipoSchema,
   dataInicio: isoDateTimeSchema,

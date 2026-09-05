@@ -1,11 +1,12 @@
 'use client';
 
-import { type EventoTipo } from '@arbora/contracts';
+import { criarEventoRequestSchema, type EventoTipo } from '@arbora/contracts';
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useRef, useState } from 'react';
 
 import { criarEvento } from '@/lib/eventos-client';
+import { primeiroErroPorCampo } from '@/lib/form-errors';
 
 const TIPO_LABEL: Record<EventoTipo, string> = {
   EVENTO: 'Evento Escolar',
@@ -21,33 +22,46 @@ export function NovoEventoDialog() {
   const [tipo, setTipo] = useState<EventoTipo>('EVENTO');
   const [dataInicio, setDataInicio] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<Record<string, string>>({});
 
   function limparEAbrir(): void {
     setTitulo('');
     setTipo('EVENTO');
     setDataInicio('');
-    setErro(null);
+    setErros({});
     dialogRef.current?.showModal();
   }
 
   async function handleSubmit(evento: FormEvent): Promise<void> {
     evento.preventDefault();
+    setErros({});
+
+    if (!dataInicio) {
+      setErros({ dataInicio: 'Informe uma data' });
+      return;
+    }
+
+    const [ano, mes, dia] = dataInicio.split('-').map(Number);
+    const payload = {
+      titulo,
+      tipo,
+      // Meio-dia local em vez de meia-noite UTC: evita a data cair no dia
+      // anterior ao renderizar em fusos horários atrás de UTC (ex.: -03:00).
+      dataInicio: new Date(ano!, mes! - 1, dia!, 12, 0, 0).toISOString(),
+    };
+    const validado = criarEventoRequestSchema.safeParse(payload);
+    if (!validado.success) {
+      setErros(primeiroErroPorCampo(validado.error.issues));
+      return;
+    }
+
     setEnviando(true);
-    setErro(null);
     try {
-      const [ano, mes, dia] = dataInicio.split('-').map(Number);
-      await criarEvento({
-        titulo,
-        tipo,
-        // Meio-dia local em vez de meia-noite UTC: evita a data cair no dia
-        // anterior ao renderizar em fusos horários atrás de UTC (ex.: -03:00).
-        dataInicio: new Date(ano!, mes! - 1, dia!, 12, 0, 0).toISOString(),
-      });
+      await criarEvento(validado.data);
       dialogRef.current?.close();
       router.refresh();
     } catch {
-      setErro('Não foi possível cadastrar o evento. Tente novamente.');
+      setErros({ _root: 'Não foi possível cadastrar o evento. Tente novamente.' });
     } finally {
       setEnviando(false);
     }
@@ -77,8 +91,14 @@ export function NovoEventoDialog() {
               required
               value={titulo}
               onChange={(evento) => setTitulo(evento.target.value)}
-              className="rounded-(--radius-card) mt-1 w-full border border-[var(--color-border)] px-3 py-2 text-sm font-normal"
+              aria-invalid={Boolean(erros.titulo)}
+              className={`rounded-(--radius-card) mt-1 w-full border px-3 py-2 text-sm font-normal ${
+                erros.titulo ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'
+              }`}
             />
+            {erros.titulo && (
+              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">{erros.titulo}</p>
+            )}
           </label>
 
           <label className="text-sm font-medium">
@@ -103,11 +123,19 @@ export function NovoEventoDialog() {
               type="date"
               value={dataInicio}
               onChange={(evento) => setDataInicio(evento.target.value)}
-              className="rounded-(--radius-card) mt-1 w-full border border-[var(--color-border)] px-3 py-2 text-sm font-normal"
+              aria-invalid={Boolean(erros.dataInicio)}
+              className={`rounded-(--radius-card) mt-1 w-full border px-3 py-2 text-sm font-normal ${
+                erros.dataInicio ? 'border-[var(--color-danger)]' : 'border-[var(--color-border)]'
+              }`}
             />
+            {erros.dataInicio && (
+              <p className="mt-1 text-xs font-normal text-[var(--color-danger)]">
+                {erros.dataInicio}
+              </p>
+            )}
           </label>
 
-          {erro && <p className="text-sm text-[var(--color-danger)]">{erro}</p>}
+          {erros._root && <p className="text-sm text-[var(--color-danger)]">{erros._root}</p>}
 
           <div className="mt-2 flex justify-end gap-2">
             <button
