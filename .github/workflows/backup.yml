@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 15
     environment: ${{ github.event.inputs.ambiente || 'production' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
