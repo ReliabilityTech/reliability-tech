@@ -39,7 +39,7 @@ jobs:
       api-image: ${{ steps.tags.outputs.api }}
       web-image: ${{ steps.tags.outputs.web }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v3
 
@@ -100,7 +100,7 @@ jobs:
     timeout-minutes: 15
     environment: ${{ inputs.ambiente }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
