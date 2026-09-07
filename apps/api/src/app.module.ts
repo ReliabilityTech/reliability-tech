@@ -12,6 +12,7 @@ import { AuditModule } from './common/audit/audit.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { type Env, validateEnv } from './config/env';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { DisciplinasModule } from './disciplinas/disciplinas.module';
 import { EventosModule } from './eventos/eventos.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -19,6 +20,8 @@ import { ProfessorModule } from './professor/professor.module';
 import { RecadosModule } from './recados/recados.module';
 import { ResponsavelModule } from './responsavel/responsavel.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { TurmasModule } from './turmas/turmas.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -76,6 +79,9 @@ import { TenantsModule } from './tenants/tenants.module';
     EventosModule,
     ResponsavelModule,
     TenantsModule,
+    TurmasModule,
+    DisciplinasModule,
+    UsuariosModule,
     DashboardModule,
   ],
   providers: [

@@ -1,7 +1,10 @@
 import { type User } from '@arbora/contracts';
 import {
+  BookOpen,
   CalendarDays,
   ClipboardCheck,
+  GraduationCap,
+  Layers,
   LayoutGrid,
   Megaphone,
   NotebookPen,
@@ -29,6 +32,19 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['ADMIN_ESCOLAR', 'COORDENACAO', 'PROFESSOR', 'RESPONSAVEL'],
   },
   { href: '/alunos', label: 'Alunos', icon: Users, roles: ['ADMIN_ESCOLAR', 'COORDENACAO'] },
+  { href: '/turmas', label: 'Turmas', icon: Layers, roles: ['ADMIN_ESCOLAR', 'COORDENACAO'] },
+  {
+    href: '/disciplinas',
+    label: 'Disciplinas',
+    icon: BookOpen,
+    roles: ['ADMIN_ESCOLAR', 'COORDENACAO'],
+  },
+  {
+    href: '/professores',
+    label: 'Professores',
+    icon: GraduationCap,
+    roles: ['ADMIN_ESCOLAR', 'COORDENACAO'],
+  },
   { href: '/chamada', label: 'Chamada', icon: ClipboardCheck, roles: ['PROFESSOR'] },
   { href: '/notas', label: 'Notas', icon: NotebookPen, roles: ['PROFESSOR'] },
   {

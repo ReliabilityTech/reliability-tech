@@ -20,6 +20,11 @@ const ACAO_LABEL: Record<string, string> = {
   RECADO_PUBLICADO: 'Novo comunicado publicado',
   EVENTO_CRIADO: 'Novo evento na agenda',
   TENANT_STATUS_ALTERADO: 'Status de instituição alterado',
+  TENANT_CRIADO: 'Nova instituição cadastrada',
+  TURMA_CRIADA: 'Nova turma cadastrada',
+  DISCIPLINA_CRIADA: 'Nova disciplina cadastrada',
+  ALUNO_CRIADO: 'Novo aluno cadastrado',
+  PROFESSOR_CRIADO: 'Novo professor cadastrado',
 };
 
 @Injectable()
