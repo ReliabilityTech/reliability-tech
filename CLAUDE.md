@@ -56,8 +56,10 @@ do admin, o lançamento de notas/chamada do professor e o painel do super-admin,
 `storageState` por papel (`pnpm --filter @arbora/web test:e2e`). Fase 4.2 (Testes de integração com
 Testcontainers) também: `apps/api/test/integration/` sobe um Postgres efêmero de verdade, roda as
 migrações reais e testa isolamento entre tenants sem mockar o Prisma (`pnpm --filter @arbora/api
-test:integration`). 4.3 a 4.5 (cobertura mínima no CI, rastreabilidade e testes de componente)
-seguem pendentes.
+test:integration`). Fase 4.3 (cobertura mínima no CI) também: `pnpm check`/CI agora rodam
+`pnpm test:coverage`, com piso de cobertura no jest da API e no vitest de contracts/web (web só em
+`src/lib/**`, já que `src/app`/`src/components` seguem sem infra de teste de unidade). 4.4 e 4.5
+(rastreabilidade e testes de componente) seguem pendentes.
 
 Antes de mexer no domínio, leia:
 
