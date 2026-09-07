@@ -3,8 +3,10 @@ import {
   type AlunoPerfil,
   type CriarAlunoRequest,
   criarAlunoRequestSchema,
+  type VincularResponsavelRequest,
+  vincularResponsavelRequestSchema,
 } from '@arbora/contracts';
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -44,5 +46,33 @@ export class AlunosController {
   @ApiOperation({ summary: 'Perfil completo de um aluno (RF-011)' })
   perfil(@CurrentUser() user: AccessTokenPayload, @Param('id') id: string): Promise<AlunoPerfil> {
     return this.alunosService.perfil(requireTenantId(user), id);
+  }
+
+  @Roles('ADMIN_ESCOLAR', 'COORDENACAO')
+  @Audit('RESPONSAVEL_VINCULADO', 'AlunoResponsavel')
+  @Post(':id/responsaveis')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Vincula um responsável ao aluno, criando a conta se necessário (RF-004)',
+  })
+  vincularResponsavel(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(vincularResponsavelRequestSchema)) body: VincularResponsavelRequest,
+  ): Promise<{ id: string }> {
+    return this.alunosService.vincularResponsavel(requireTenantId(user), id, body);
+  }
+
+  @Roles('ADMIN_ESCOLAR', 'COORDENACAO')
+  @Audit('RESPONSAVEL_DESVINCULADO', 'AlunoResponsavel')
+  @Delete(':id/responsaveis/:responsavelId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove o vínculo entre um responsável e o aluno (RF-004)' })
+  desvincularResponsavel(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id') id: string,
+    @Param('responsavelId') responsavelId: string,
+  ): Promise<void> {
+    return this.alunosService.desvincularResponsavel(requireTenantId(user), id, responsavelId);
   }
 }

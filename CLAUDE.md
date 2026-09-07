@@ -109,6 +109,14 @@ imagem base dos dois Dockerfile. Minor/patch entram agrupados por categoria; maj
 Abre PR, não faz merge sozinho — cada um passa pelo `pull_request` de `ci.yml` e espera revisão
 humana.
 
+**Fase 6 (lacunas restantes e evolução)** cobre três frentes independentes, ver
+`docs/roadmap.md`: 6.1 lacunas funcionais restantes, 6.2 RLS no Postgres, 6.3 PWA + split de
+monorepo (este último só quando o usuário confirmar que "as condições estão favoráveis" — não
+começar sem pedido explícito). Dentro de 6.1, vínculo responsável↔aluno (RF-004) está concluído:
+`POST`/`DELETE /alunos/:id/responsaveis` resolve por e-mail, reaproveitando uma conta
+`RESPONSAVEL` existente do mesmo tenant em vez de duplicar (RF-004 cita "pai e mãe separados,
+ambos com acesso"). Atribuição professor↔turma+disciplina (a outra metade de 6.1) segue pendente.
+
 Antes de mexer no domínio, leia:
 
 - `docs/requisitos/funcionais.md` e `docs/requisitos/nao-funcionais.md` — RF-NNN/RNF-NNN, fonte

@@ -1,7 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 
+import { PasswordService } from '../auth/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AlunosService } from './alunos.service';
 
@@ -13,14 +14,21 @@ describe('AlunosService', () => {
       nota: { aggregate: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       movimentacao: { findMany: jest.fn().mockResolvedValue([]) },
       turma: { findFirst: jest.fn() },
+      user: { findUnique: jest.fn(), create: jest.fn() },
+      alunoResponsavel: { create: jest.fn(), deleteMany: jest.fn() },
       ...prismaOverrides,
     };
+    const passwordService = { hash: jest.fn().mockResolvedValue('hash-fake') };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [AlunosService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        AlunosService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PasswordService, useValue: passwordService },
+      ],
     }).compile();
 
-    return { service: moduleRef.get(AlunosService), prisma };
+    return { service: moduleRef.get(AlunosService), prisma, passwordService };
   };
 
   describe('calcularFrequencia', () => {
@@ -187,6 +195,186 @@ describe('AlunosService', () => {
       await expect(service.criar('tenant-1', dados)).rejects.toThrow(
         'Já existe um aluno com essa matrícula',
       );
+    });
+  });
+
+  describe('vincularResponsavel', () => {
+    const dados = {
+      nome: 'Maria Costa',
+      email: 'maria@exemplo.com',
+      senha: 'SenhaForte123',
+      parentesco: 'mãe',
+      podeRetirar: true,
+    };
+
+    it('lança NotFoundException quando o aluno não existe no tenant', async () => {
+      const { service, prisma } = await criarServico();
+      (prisma.aluno.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.vincularResponsavel('tenant-1', 'aluno-1', dados),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('cria uma conta nova quando o e-mail ainda não existe', async () => {
+      const { service, prisma, passwordService } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
+        user: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({ id: 'responsavel-novo' }),
+        },
+        alunoResponsavel: { create: jest.fn().mockResolvedValue({ id: 'vinculo-1' }) },
+      });
+
+      const resultado = await service.vincularResponsavel('tenant-1', 'aluno-1', dados);
+
+      expect(resultado).toEqual({ id: 'vinculo-1' });
+      expect(passwordService.hash).toHaveBeenCalledWith('SenhaForte123');
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: {
+          tenantId: 'tenant-1',
+          name: 'Maria Costa',
+          email: 'maria@exemplo.com',
+          passwordHash: 'hash-fake',
+          role: 'RESPONSAVEL',
+        },
+      });
+      expect(prisma.alunoResponsavel.create).toHaveBeenCalledWith({
+        data: {
+          alunoId: 'aluno-1',
+          responsavelId: 'responsavel-novo',
+          parentesco: 'mãe',
+          podeRetirar: true,
+        },
+      });
+    });
+
+    it('reaproveita a conta existente quando o e-mail já pertence a um RESPONSAVEL do mesmo tenant', async () => {
+      const { service, prisma, passwordService } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-2' }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({
+              id: 'responsavel-existente',
+              tenantId: 'tenant-1',
+              role: 'RESPONSAVEL',
+            }),
+          create: jest.fn(),
+        },
+        alunoResponsavel: { create: jest.fn().mockResolvedValue({ id: 'vinculo-2' }) },
+      });
+
+      const resultado = await service.vincularResponsavel('tenant-1', 'aluno-2', dados);
+
+      expect(resultado).toEqual({ id: 'vinculo-2' });
+      expect(passwordService.hash).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
+      expect(prisma.alunoResponsavel.create).toHaveBeenCalledWith({
+        data: {
+          alunoId: 'aluno-2',
+          responsavelId: 'responsavel-existente',
+          parentesco: 'mãe',
+          podeRetirar: true,
+        },
+      });
+    });
+
+    it('rejeita quando o e-mail já pertence a uma conta de outro papel do mesmo tenant', async () => {
+      const { service } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({ id: 'prof-1', tenantId: 'tenant-1', role: 'PROFESSOR' }),
+        },
+      });
+
+      await expect(
+        service.vincularResponsavel('tenant-1', 'aluno-1', dados),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejeita quando o e-mail já pertence a uma conta de outra instituição — `User.email` é único globalmente', async () => {
+      const { service } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({
+              id: 'responsavel-outro-tenant',
+              tenantId: 'tenant-2',
+              role: 'RESPONSAVEL',
+            }),
+        },
+      });
+
+      await expect(
+        service.vincularResponsavel('tenant-1', 'aluno-1', dados),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejeita conta nova sem senha informada', async () => {
+      const { service } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
+        user: { findUnique: jest.fn().mockResolvedValue(null) },
+      });
+
+      await expect(
+        service.vincularResponsavel('tenant-1', 'aluno-1', { ...dados, senha: undefined }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejeita vínculo duplicado com ConflictException', async () => {
+      const erroPrisma = new Prisma.PrismaClientKnownRequestError('vínculo já existe', {
+        code: 'P2002',
+        clientVersion: '6.14.0',
+      });
+      const { service } = await criarServico({
+        aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
+        user: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValue({
+              id: 'responsavel-existente',
+              tenantId: 'tenant-1',
+              role: 'RESPONSAVEL',
+            }),
+        },
+        alunoResponsavel: { create: jest.fn().mockRejectedValue(erroPrisma) },
+      });
+
+      await expect(
+        service.vincularResponsavel('tenant-1', 'aluno-1', dados),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('desvincularResponsavel', () => {
+    it('remove o vínculo filtrando por tenant via o relacionamento com aluno', async () => {
+      const { service, prisma } = await criarServico({
+        alunoResponsavel: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+      });
+
+      await service.desvincularResponsavel('tenant-1', 'aluno-1', 'responsavel-1');
+
+      expect(prisma.alunoResponsavel.deleteMany).toHaveBeenCalledWith({
+        where: {
+          alunoId: 'aluno-1',
+          responsavelId: 'responsavel-1',
+          aluno: { tenantId: 'tenant-1' },
+        },
+      });
+    });
+
+    it('lança NotFoundException quando não havia vínculo pra remover', async () => {
+      const { service } = await criarServico({
+        alunoResponsavel: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      });
+
+      await expect(
+        service.desvincularResponsavel('tenant-1', 'aluno-1', 'responsavel-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

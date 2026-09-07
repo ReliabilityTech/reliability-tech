@@ -74,3 +74,21 @@ test('cadastra um aluno sem turma', async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(page.getByRole('link', { name: 'Aluno E2E' })).toBeVisible();
 });
+
+test('vincula um responsável a um aluno existente, criando a conta', async ({ page }) => {
+  await page.goto('/alunos');
+  await page.getByRole('link', { name: 'Pedro Pereira' }).click();
+  await expect(page).toHaveURL(/\/alunos\/.+/);
+
+  await page.getByRole('button', { name: 'Vincular responsável' }).click();
+  const dialog = page.locator('dialog');
+  await dialog.getByLabel('Nome').fill('Responsável E2E');
+  await dialog.getByLabel('E-mail').fill('responsavel-e2e@exemplo.com');
+  await dialog.getByLabel(/^Senha/).fill('SenhaForte123');
+  await dialog.getByLabel('Parentesco').fill('tio');
+  await dialog.getByRole('button', { name: 'Vincular' }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText('Responsável E2E')).toBeVisible();
+  await expect(page.getByText('responsavel-e2e@exemplo.com')).toBeVisible();
+});

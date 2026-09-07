@@ -5,6 +5,9 @@ import { buscarAlunoPerfil } from '@/lib/alunos';
 import { ApiRequestError } from '@/lib/api-client';
 import { requireRole } from '@/lib/server-session';
 
+import { RemoverResponsavelButton } from './remover-responsavel-button';
+import { VincularResponsavelDialog } from './vincular-responsavel-dialog';
+
 function iniciais(nome: string): string {
   return nome
     .split(' ')
@@ -72,7 +75,10 @@ export default async function PerfilAlunoPage({ params }: { params: Promise<{ id
 
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-(--radius-card) border border-[var(--color-border)] bg-[var(--color-surface)] p-4 lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Responsáveis vinculados</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold">Responsáveis vinculados</h2>
+            <VincularResponsavelDialog alunoId={aluno.id} />
+          </div>
           {aluno.responsaveis.length === 0 ? (
             <p className="text-sm text-[var(--color-foreground-muted)]">
               Nenhum responsável vinculado.
@@ -84,7 +90,10 @@ export default async function PerfilAlunoPage({ params }: { params: Promise<{ id
                   key={resp.id}
                   className="rounded-(--radius-card) border border-[var(--color-border)] p-3 text-sm"
                 >
-                  <p className="mb-1 font-medium">{resp.nome}</p>
+                  <div className="mb-1 flex items-start justify-between gap-2">
+                    <p className="font-medium">{resp.nome}</p>
+                    <RemoverResponsavelButton alunoId={aluno.id} responsavelId={resp.id} />
+                  </div>
                   <p className="mb-2 capitalize text-[var(--color-foreground-muted)]">
                     {resp.parentesco}
                   </p>

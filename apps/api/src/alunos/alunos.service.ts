@@ -3,6 +3,7 @@ import {
   type AlunoPerfil,
   type AlunoPerfilEvento,
   type CriarAlunoRequest,
+  type VincularResponsavelRequest,
 } from '@arbora/contracts';
 import {
   BadRequestException,
@@ -10,15 +11,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 
+import { PasswordService } from '../auth/password.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const JANELA_FREQUENCIA_DIAS = 30;
 
 @Injectable()
 export class AlunosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwordService: PasswordService,
+  ) {}
 
   async listar(tenantId: string): Promise<AlunoListItem[]> {
     const alunos = await this.prisma.aluno.findMany({
@@ -141,6 +146,82 @@ export class AlunosService {
       })),
       eventosRecentes,
     };
+  }
+
+  /**
+   * Resolve por e-mail em vez de sempre criar uma conta nova: RF-004 cita
+   * explicitamente "pai e mãe separados, ambos com acesso" — a mesma pessoa
+   * vai precisar ser vinculada a um segundo filho depois, e criar uma conta
+   * por vínculo duplicaria a pessoa real.
+   */
+  async vincularResponsavel(
+    tenantId: string,
+    alunoId: string,
+    dados: VincularResponsavelRequest,
+  ): Promise<{ id: string }> {
+    const aluno = await this.prisma.aluno.findFirst({ where: { id: alunoId, tenantId } });
+    if (!aluno) throw new NotFoundException('Aluno não encontrado');
+
+    // `User.email` é único globalmente (não por tenant) — busca por e-mail
+    // sozinho e só depois decide se reaproveita, rejeita (tenant/papel
+    // errado) ou cria; um `findFirst({ tenantId, email })` deixaria passar
+    // batido um e-mail de outro tenant até estourar cru no `create` abaixo,
+    // contra a constraint global.
+    const existente = await this.prisma.user.findUnique({ where: { email: dados.email } });
+
+    let responsavelId: string;
+    if (existente) {
+      if (existente.tenantId !== tenantId) {
+        throw new BadRequestException('Este e-mail já pertence a uma conta em outra instituição');
+      }
+      if (existente.role !== UserRole.RESPONSAVEL) {
+        throw new BadRequestException('Este e-mail já pertence a outro tipo de conta');
+      }
+      responsavelId = existente.id;
+    } else {
+      if (!dados.senha) {
+        throw new BadRequestException('Informe uma senha para criar a conta do responsável');
+      }
+      const passwordHash = await this.passwordService.hash(dados.senha);
+      const responsavel = await this.prisma.user.create({
+        data: {
+          tenantId,
+          name: dados.nome,
+          email: dados.email,
+          passwordHash,
+          role: UserRole.RESPONSAVEL,
+        },
+      });
+      responsavelId = responsavel.id;
+    }
+
+    try {
+      const vinculo = await this.prisma.alunoResponsavel.create({
+        data: {
+          alunoId,
+          responsavelId,
+          parentesco: dados.parentesco,
+          podeRetirar: dados.podeRetirar,
+        },
+      });
+      return { id: vinculo.id };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Este responsável já está vinculado a este aluno');
+      }
+      throw error;
+    }
+  }
+
+  async desvincularResponsavel(
+    tenantId: string,
+    alunoId: string,
+    responsavelId: string,
+  ): Promise<void> {
+    const { count } = await this.prisma.alunoResponsavel.deleteMany({
+      where: { alunoId, responsavelId, aluno: { tenantId } },
+    });
+    if (count === 0) throw new NotFoundException('Vínculo não encontrado');
   }
 
   /** Percentual de presença nos últimos 30 dias, por aluno. Ausente do mapa = sem registro. */

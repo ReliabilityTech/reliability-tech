@@ -25,6 +25,8 @@ const ACAO_LABEL: Record<string, string> = {
   DISCIPLINA_CRIADA: 'Nova disciplina cadastrada',
   ALUNO_CRIADO: 'Novo aluno cadastrado',
   PROFESSOR_CRIADO: 'Novo professor cadastrado',
+  RESPONSAVEL_VINCULADO: 'Responsável vinculado a aluno',
+  RESPONSAVEL_DESVINCULADO: 'Responsável desvinculado de aluno',
 };
 
 @Injectable()

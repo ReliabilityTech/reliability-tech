@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 import { alunoStatusSchema, periodoTipoSchema } from './academico';
 import { eventoTipoSchema } from './agenda';
-import { idSchema, isoDateTimeSchema } from './common/primitives';
+import { passwordSchema } from './auth';
+import { emailSchema, idSchema, isoDateTimeSchema } from './common/primitives';
 import { recadoDestinatarioSchema } from './comunicacao';
 import { movimentacaoTipoSchema } from './movimentacao';
 import { tenantStatusSchema } from './tenant';
@@ -64,6 +65,20 @@ export const criarAlunoRequestSchema = z.object({
   turmaId: idSchema.optional(),
 });
 export type CriarAlunoRequest = z.infer<typeof criarAlunoRequestSchema>;
+
+/**
+ * `senha` só é obrigatória quando o e-mail ainda não tem conta de responsável
+ * neste tenant — o service resolve por e-mail (reaproveita conta existente ou
+ * cria uma nova) e é quem valida essa obrigatoriedade condicional (RF-004).
+ */
+export const vincularResponsavelRequestSchema = z.object({
+  nome: z.string().trim().min(2, 'Informe o nome completo').max(160),
+  email: emailSchema,
+  senha: passwordSchema.optional(),
+  parentesco: z.string().trim().min(1, 'Informe o parentesco').max(40),
+  podeRetirar: z.boolean().default(true),
+});
+export type VincularResponsavelRequest = z.infer<typeof vincularResponsavelRequestSchema>;
 
 // ---------------------------------------------------------------------------
 // Turmas, disciplinas e professores (RF-009)
