@@ -6,17 +6,17 @@ import { ResponsavelService } from './responsavel.service';
 
 describe('ResponsavelService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       alunoResponsavel: { findMany: jest.fn(), findFirst: jest.fn() },
       movimentacao: { findMany: jest.fn() },
       ...prismaOverrides,
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [ResponsavelService, { provide: PrismaService, useValue: prisma }],
+      providers: [ResponsavelService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(ResponsavelService), prisma };
+    return { service: moduleRef.get(ResponsavelService), prisma: db };
   };
 
   describe('listarMovimentacoes', () => {

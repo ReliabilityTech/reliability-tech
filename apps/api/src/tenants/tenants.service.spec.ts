@@ -6,17 +6,17 @@ import { TenantsService } from './tenants.service';
 
 describe('TenantsService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       tenant: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
       aluno: { count: jest.fn() },
       ...prismaOverrides,
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [TenantsService, { provide: PrismaService, useValue: prisma }],
+      providers: [TenantsService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(TenantsService), prisma };
+    return { service: moduleRef.get(TenantsService), prisma: db };
   };
 
   describe('criar', () => {

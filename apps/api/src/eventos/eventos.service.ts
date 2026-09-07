@@ -8,7 +8,7 @@ export class EventosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(tenantId: string): Promise<EventoCalendario[]> {
-    const eventos = await this.prisma.evento.findMany({
+    const eventos = await this.prisma.db.evento.findMany({
       where: { tenantId, deletedAt: null },
       include: { turma: true },
       orderBy: { dataInicio: 'asc' },
@@ -26,7 +26,7 @@ export class EventosService {
   }
 
   async criar(tenantId: string, body: CriarEventoRequest): Promise<{ id: string }> {
-    const evento = await this.prisma.evento.create({
+    const evento = await this.prisma.db.evento.create({
       data: {
         tenantId,
         titulo: body.titulo,

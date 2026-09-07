@@ -5,16 +5,16 @@ import { EventosService } from './eventos.service';
 
 describe('EventosService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       evento: { findMany: jest.fn(), create: jest.fn() },
       ...prismaOverrides,
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [EventosService, { provide: PrismaService, useValue: prisma }],
+      providers: [EventosService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(EventosService), prisma };
+    return { service: moduleRef.get(EventosService), prisma: db };
   };
 
   describe('listar', () => {

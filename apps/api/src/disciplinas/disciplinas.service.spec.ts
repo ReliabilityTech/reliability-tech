@@ -6,16 +6,16 @@ import { DisciplinasService } from './disciplinas.service';
 
 describe('DisciplinasService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       disciplina: { findMany: jest.fn(), create: jest.fn() },
       ...prismaOverrides,
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [DisciplinasService, { provide: PrismaService, useValue: prisma }],
+      providers: [DisciplinasService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(DisciplinasService), prisma };
+    return { service: moduleRef.get(DisciplinasService), prisma: db };
   };
 
   describe('listar', () => {

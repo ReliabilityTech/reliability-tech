@@ -7,7 +7,7 @@ import { UsuariosService } from './usuarios.service';
 
 describe('UsuariosService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       user: { findMany: jest.fn(), create: jest.fn() },
       ...prismaOverrides,
     };
@@ -16,12 +16,12 @@ describe('UsuariosService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         UsuariosService,
-        { provide: PrismaService, useValue: prisma },
+        { provide: PrismaService, useValue: { db } },
         { provide: PasswordService, useValue: passwordService },
       ],
     }).compile();
 
-    return { service: moduleRef.get(UsuariosService), prisma, passwordService };
+    return { service: moduleRef.get(UsuariosService), prisma: db, passwordService };
   };
 
   describe('listarProfessores', () => {

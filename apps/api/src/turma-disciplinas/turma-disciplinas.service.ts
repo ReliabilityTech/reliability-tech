@@ -15,9 +15,9 @@ export class TurmaDisciplinasService {
    */
   async atribuir(tenantId: string, dados: CriarTurmaDisciplinaRequest): Promise<{ id: string }> {
     const [turma, disciplina, professor] = await Promise.all([
-      this.prisma.turma.findFirst({ where: { id: dados.turmaId, tenantId } }),
-      this.prisma.disciplina.findFirst({ where: { id: dados.disciplinaId, tenantId } }),
-      this.prisma.user.findFirst({
+      this.prisma.db.turma.findFirst({ where: { id: dados.turmaId, tenantId } }),
+      this.prisma.db.disciplina.findFirst({ where: { id: dados.disciplinaId, tenantId } }),
+      this.prisma.db.user.findFirst({
         where: { id: dados.professorId, tenantId, role: UserRole.PROFESSOR },
       }),
     ]);
@@ -26,7 +26,7 @@ export class TurmaDisciplinasService {
     if (!disciplina) throw new BadRequestException('Disciplina não encontrada nesta instituição');
     if (!professor) throw new BadRequestException('Professor não encontrado nesta instituição');
 
-    const turmaDisciplina = await this.prisma.turmaDisciplina.upsert({
+    const turmaDisciplina = await this.prisma.db.turmaDisciplina.upsert({
       where: { turmaId_disciplinaId: { turmaId: dados.turmaId, disciplinaId: dados.disciplinaId } },
       update: { professorId: dados.professorId },
       create: {

@@ -11,7 +11,7 @@ describe('DashboardService', () => {
     prismaOverrides?: Record<string, unknown>;
     frequenciaPorAluno?: Map<string, number>;
   }) => {
-    const prisma = {
+    const db = {
       aluno: {
         findMany: jest.fn().mockResolvedValue([
           { id: 'aluno-1', nome: 'Ana', turma: { nome: '5º Ano A' } },
@@ -44,14 +44,14 @@ describe('DashboardService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         DashboardService,
-        { provide: PrismaService, useValue: prisma },
+        { provide: PrismaService, useValue: { db } },
         { provide: AlunosService, useValue: alunosService },
         { provide: ProfessorService, useValue: { listarTurmas: jest.fn() } },
         { provide: TenantsService, useValue: { resumo: jest.fn() } },
       ],
     }).compile();
 
-    return { service: moduleRef.get(DashboardService), prisma, alunosService };
+    return { service: moduleRef.get(DashboardService), prisma: db, alunosService };
   };
 
   it('filtra apenas alunos abaixo de 80% de frequência, ordenados do pior para o melhor', async () => {

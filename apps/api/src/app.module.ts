@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -10,6 +10,7 @@ import { AlunosModule } from './alunos/alunos.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './common/audit/audit.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { TenantContextInterceptor } from './common/tenant-context.interceptor';
 import { type Env, validateEnv } from './config/env';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DisciplinasModule } from './disciplinas/disciplinas.module';
@@ -89,6 +90,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
   ],
 })
 export class AppModule {}

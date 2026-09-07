@@ -120,7 +120,19 @@ ambos com acesso"). Atribuição professor↔turma+disciplina — `apps/api/src/
 `turmasAtribuidas`. Unitário/integração(Postgres real)/componente verificados verdes; o caso E2E
 existe em `apps/web/e2e/admin.spec.ts` mas **não foi verificado rodando** nesta sessão — máquina
 com CPU a 90%+/RAM livre baixa no momento, todas as falhas foram timeout de compilação/navegação,
-nunca uma asserção quebrada. 6.2 (RLS) e 6.3 (PWA+split) seguem pendentes, não iniciados.
+nunca uma asserção quebrada.
+
+**Fase 6.2 (RLS) concluída**: políticas RLS nas 8 tabelas com `tenant_id` obrigatório e direto
+(`turmas`, `disciplinas`, `periodos_letivos`, `alunos`, `recados`, `conversas`, `eventos`,
+`notificacoes` — ver ADR 0006). O papel de migração (`arbora`) é superusuário e ignora RLS
+sempre — a API roda com um papel novo e restrito (`arbora_app`, `APP_DATABASE_URL`), separado do
+de migração. Contexto de tenant flui via `AsyncLocalStorage`
+(`apps/api/src/common/tenant-context.ts`) até uma extensão do Prisma Client
+(`apps/api/src/prisma/tenant-rls.extension.ts`); `PrismaService` agora é composição, não herança
+(`this.prisma.db.<model>`, não `this.prisma.<model>` — ~15 arquivos, mecânico). Provado contra
+Postgres real: `apps/api/test/integration/row-level-security.integration-spec.ts`. Tabelas
+"filhas" sem `tenant_id` próprio e `users`/`audit_logs` ficam de fora desta rodada
+(`docs/roadmap.md`, dívida técnica). 6.3 (PWA+split) segue pendente, não iniciado.
 
 Antes de mexer no domínio, leia:
 

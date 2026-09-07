@@ -13,7 +13,7 @@ export class UsuariosService {
   ) {}
 
   async listarProfessores(tenantId: string): Promise<ProfessorListItem[]> {
-    const professores = await this.prisma.user.findMany({
+    const professores = await this.prisma.db.user.findMany({
       where: { tenantId, role: UserRole.PROFESSOR, deletedAt: null },
       include: {
         turmasLecionadas: { include: { turma: true, disciplina: true } },
@@ -35,7 +35,7 @@ export class UsuariosService {
   async criarProfessor(tenantId: string, dados: RegisterRequest): Promise<{ id: string }> {
     const passwordHash = await this.passwordService.hash(dados.password);
     try {
-      const professor = await this.prisma.user.create({
+      const professor = await this.prisma.db.user.create({
         data: {
           tenantId,
           name: dados.name,

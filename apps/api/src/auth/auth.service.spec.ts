@@ -26,7 +26,7 @@ describe('AuthService', () => {
     jwt?: Record<string, unknown>;
     password?: Record<string, unknown>;
   }) => {
-    const prisma = {
+    const db = {
       user: { findUnique: jest.fn() },
       refreshToken: {
         create: jest.fn(),
@@ -43,14 +43,14 @@ describe('AuthService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: PrismaService, useValue: prisma },
+        { provide: PrismaService, useValue: { db } },
         { provide: JwtService, useValue: jwt },
         { provide: PasswordService, useValue: password },
         { provide: ConfigService, useValue: config },
       ],
     }).compile();
 
-    return { service: moduleRef.get(AuthService), prisma, jwt, password };
+    return { service: moduleRef.get(AuthService), prisma: db, jwt, password };
   };
 
   describe('login', () => {

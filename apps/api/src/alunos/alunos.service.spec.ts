@@ -8,7 +8,7 @@ import { AlunosService } from './alunos.service';
 
 describe('AlunosService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       aluno: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
       presenca: { findMany: jest.fn().mockResolvedValue([]) },
       nota: { aggregate: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
@@ -23,12 +23,12 @@ describe('AlunosService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AlunosService,
-        { provide: PrismaService, useValue: prisma },
+        { provide: PrismaService, useValue: { db } },
         { provide: PasswordService, useValue: passwordService },
       ],
     }).compile();
 
-    return { service: moduleRef.get(AlunosService), prisma, passwordService };
+    return { service: moduleRef.get(AlunosService), prisma: db, passwordService };
   };
 
   describe('calcularFrequencia', () => {
@@ -253,13 +253,11 @@ describe('AlunosService', () => {
       const { service, prisma, passwordService } = await criarServico({
         aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-2' }) },
         user: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({
-              id: 'responsavel-existente',
-              tenantId: 'tenant-1',
-              role: 'RESPONSAVEL',
-            }),
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'responsavel-existente',
+            tenantId: 'tenant-1',
+            role: 'RESPONSAVEL',
+          }),
           create: jest.fn(),
         },
         alunoResponsavel: { create: jest.fn().mockResolvedValue({ id: 'vinculo-2' }) },
@@ -299,13 +297,11 @@ describe('AlunosService', () => {
       const { service } = await criarServico({
         aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
         user: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({
-              id: 'responsavel-outro-tenant',
-              tenantId: 'tenant-2',
-              role: 'RESPONSAVEL',
-            }),
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'responsavel-outro-tenant',
+            tenantId: 'tenant-2',
+            role: 'RESPONSAVEL',
+          }),
         },
       });
 
@@ -333,13 +329,11 @@ describe('AlunosService', () => {
       const { service } = await criarServico({
         aluno: { findFirst: jest.fn().mockResolvedValue({ id: 'aluno-1' }) },
         user: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({
-              id: 'responsavel-existente',
-              tenantId: 'tenant-1',
-              role: 'RESPONSAVEL',
-            }),
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'responsavel-existente',
+            tenantId: 'tenant-1',
+            role: 'RESPONSAVEL',
+          }),
         },
         alunoResponsavel: { create: jest.fn().mockRejectedValue(erroPrisma) },
       });

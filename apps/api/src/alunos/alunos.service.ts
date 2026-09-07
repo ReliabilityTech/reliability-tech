@@ -26,7 +26,7 @@ export class AlunosService {
   ) {}
 
   async listar(tenantId: string): Promise<AlunoListItem[]> {
-    const alunos = await this.prisma.aluno.findMany({
+    const alunos = await this.prisma.db.aluno.findMany({
       where: { tenantId, deletedAt: null },
       include: {
         turma: true,
@@ -60,14 +60,14 @@ export class AlunosService {
       // FK do Postgres em vez de uma mensagem clara — e um teste de
       // integração (não um unitário com Prisma mockado) é o que pegaria essa
       // omissão de verdade.
-      const turma = await this.prisma.turma.findFirst({
+      const turma = await this.prisma.db.turma.findFirst({
         where: { id: dados.turmaId, tenantId },
       });
       if (!turma) throw new BadRequestException('Turma não encontrada nesta instituição');
     }
 
     try {
-      const aluno = await this.prisma.aluno.create({
+      const aluno = await this.prisma.db.aluno.create({
         data: {
           tenantId,
           nome: dados.nome,
@@ -86,7 +86,7 @@ export class AlunosService {
   }
 
   async perfil(tenantId: string, alunoId: string): Promise<AlunoPerfil> {
-    const aluno = await this.prisma.aluno.findFirst({
+    const aluno = await this.prisma.db.aluno.findFirst({
       where: { id: alunoId, tenantId, deletedAt: null },
       include: {
         turma: true,
@@ -98,15 +98,15 @@ export class AlunosService {
 
     const [mediaAgregada, frequenciaPorAluno, notasRecentes, movimentacoesRecentes] =
       await Promise.all([
-        this.prisma.nota.aggregate({ where: { alunoId }, _avg: { valor: true } }),
+        this.prisma.db.nota.aggregate({ where: { alunoId }, _avg: { valor: true } }),
         this.calcularFrequencia(tenantId, [alunoId]),
-        this.prisma.nota.findMany({
+        this.prisma.db.nota.findMany({
           where: { alunoId },
           include: { turmaDisciplina: { include: { disciplina: true } } },
           orderBy: { createdAt: 'desc' },
           take: 3,
         }),
-        this.prisma.movimentacao.findMany({
+        this.prisma.db.movimentacao.findMany({
           where: { alunoId },
           orderBy: { dataHora: 'desc' },
           take: 3,
@@ -159,7 +159,7 @@ export class AlunosService {
     alunoId: string,
     dados: VincularResponsavelRequest,
   ): Promise<{ id: string }> {
-    const aluno = await this.prisma.aluno.findFirst({ where: { id: alunoId, tenantId } });
+    const aluno = await this.prisma.db.aluno.findFirst({ where: { id: alunoId, tenantId } });
     if (!aluno) throw new NotFoundException('Aluno não encontrado');
 
     // `User.email` é único globalmente (não por tenant) — busca por e-mail
@@ -167,7 +167,7 @@ export class AlunosService {
     // errado) ou cria; um `findFirst({ tenantId, email })` deixaria passar
     // batido um e-mail de outro tenant até estourar cru no `create` abaixo,
     // contra a constraint global.
-    const existente = await this.prisma.user.findUnique({ where: { email: dados.email } });
+    const existente = await this.prisma.db.user.findUnique({ where: { email: dados.email } });
 
     let responsavelId: string;
     if (existente) {
@@ -183,7 +183,7 @@ export class AlunosService {
         throw new BadRequestException('Informe uma senha para criar a conta do responsável');
       }
       const passwordHash = await this.passwordService.hash(dados.senha);
-      const responsavel = await this.prisma.user.create({
+      const responsavel = await this.prisma.db.user.create({
         data: {
           tenantId,
           name: dados.nome,
@@ -196,7 +196,7 @@ export class AlunosService {
     }
 
     try {
-      const vinculo = await this.prisma.alunoResponsavel.create({
+      const vinculo = await this.prisma.db.alunoResponsavel.create({
         data: {
           alunoId,
           responsavelId,
@@ -218,7 +218,7 @@ export class AlunosService {
     alunoId: string,
     responsavelId: string,
   ): Promise<void> {
-    const { count } = await this.prisma.alunoResponsavel.deleteMany({
+    const { count } = await this.prisma.db.alunoResponsavel.deleteMany({
       where: { alunoId, responsavelId, aluno: { tenantId } },
     });
     if (count === 0) throw new NotFoundException('Vínculo não encontrado');
@@ -231,7 +231,7 @@ export class AlunosService {
     const desde = new Date();
     desde.setDate(desde.getDate() - JANELA_FREQUENCIA_DIAS);
 
-    const presencas = await this.prisma.presenca.findMany({
+    const presencas = await this.prisma.db.presenca.findMany({
       where: { alunoId: { in: alunoIds }, data: { gte: desde }, aluno: { tenantId } },
       select: { alunoId: true, status: true },
     });

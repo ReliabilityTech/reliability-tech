@@ -9,7 +9,7 @@ export class TurmasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(tenantId: string): Promise<TurmaListItem[]> {
-    const turmas = await this.prisma.turma.findMany({
+    const turmas = await this.prisma.db.turma.findMany({
       where: { tenantId, deletedAt: null },
       orderBy: { nome: 'asc' },
     });
@@ -24,7 +24,7 @@ export class TurmasService {
 
   async criar(tenantId: string, dados: CriarTurmaRequest): Promise<{ id: string }> {
     try {
-      const turma = await this.prisma.turma.create({ data: { tenantId, ...dados } });
+      const turma = await this.prisma.db.turma.create({ data: { tenantId, ...dados } });
       return { id: turma.id };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

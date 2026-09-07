@@ -54,7 +54,37 @@ fly postgres attach reliability-tech-db-staging -a reliability-tech-api-staging
 fly postgres attach reliability-tech-db-production -a reliability-tech-api
 ```
 
-## 4. Segredos que não vêm do Postgres
+## 4. Papel restrito pra API — RLS de verdade (roadmap 6.2)
+
+O papel que `fly postgres attach` grava em `DATABASE_URL` é quem roda a migração — não dá pra
+saber de antemão se esse papel também ignora RLS por completo (Postgres sempre ignora RLS pra
+superusuário, sem exceção), então a API roda com um papel próprio, restrito, separado — mesmo
+padrão do `backup_reader` da Fase 5.5.
+
+```bash
+fly postgres connect -a reliability-tech-db-production
+```
+
+Dentro do `psql` (o `CREATE ROLE arbora_app NOLOGIN` já veio da migração
+`20260907165617_rls_tenant_isolation` — só falta dar login):
+
+```sql
+ALTER ROLE arbora_app WITH LOGIN PASSWORD 'troque-por-um-valor-gerado' NOSUPERUSER;
+```
+
+Repita pra `-staging`. Depois, `fly secrets set` com o mesmo host/porta/banco de `DATABASE_URL`,
+só trocando usuário/senha:
+
+```bash
+fly secrets set APP_DATABASE_URL="postgresql://arbora_app:<senha-gerada>@<mesmo-host-do-DATABASE_URL>/<mesmo-banco>" -a reliability-tech-api-staging
+fly secrets set APP_DATABASE_URL="postgresql://arbora_app:<senha-gerada>@<mesmo-host-do-DATABASE_URL>/<mesmo-banco>" -a reliability-tech-api
+```
+
+`fly postgres db list -a reliability-tech-db-production` (mesmo comando já usado em
+[backup.md](backup.md)) confirma o nome do host/banco. **Sem isso, a API não sobe** — `env.ts`
+exige `APP_DATABASE_URL`.
+
+## 5. Segredos que não vêm do Postgres
 
 ```bash
 # Gere um valor por ambiente — nunca reuse o mesmo JWT_SECRET entre staging e produção.
@@ -67,7 +97,7 @@ fly secrets set CORS_ORIGINS=https://reliability-tech-web-staging.fly.dev -a rel
 fly secrets set CORS_ORIGINS=https://reliability-tech-web.fly.dev -a reliability-tech-api
 ```
 
-## 5. Sentry — monitoramento de erros (opcional, Fase 5.4)
+## 6. Sentry — monitoramento de erros (opcional, Fase 5.4)
 
 Sem isso configurado, os dois apps sobem normalmente com Sentry desligado
 (`env.ts`/`lib/env.ts` tratam DSN ausente/vazio como "sem Sentry", ver
@@ -84,7 +114,7 @@ fly secrets set SENTRY_DSN=https://...@o0.ingest.sentry.io/... -a reliability-te
 fly secrets set SENTRY_DSN=https://...@o0.ingest.sentry.io/... -a reliability-tech-api
 ```
 
-No GitHub, nos mesmos ambientes `staging`/`production` criados no passo 6:
+No GitHub, nos mesmos ambientes `staging`/`production` criados no passo 8:
 
 - **Variable** `NEXT_PUBLIC_SENTRY_DSN` — o DSN do projeto Next.js (é
   inlinado no bundle do front, por isso variável pública, não secret — mesmo
@@ -108,7 +138,7 @@ Ver [backup.md](backup.md) para o bucket Tigris, o papel Postgres só-leitura e 
 backup automatizado (Fase 5.5) — provisionamento independente deste, pode ser feito em qualquer
 ordem.
 
-## 6. Testar manualmente antes de confiar no pipeline
+## 7. Testar manualmente antes de confiar no pipeline
 
 ```bash
 docker build -f apps/api/Dockerfile -t reliability-tech-api-test .
@@ -120,7 +150,7 @@ Confirma em `fly logs -a reliability-tech-api-staging` que a migração
 reliability-tech-api-staging` mostra a máquina saudável antes de repetir pro
 web e pra produção.
 
-## 7. Ligar o pipeline automatizado (`.github/workflows/deploy.yml`)
+## 8. Ligar o pipeline automatizado (`.github/workflows/deploy.yml`)
 
 Um token por ambiente, escopado só àquela app (não à organização inteira):
 

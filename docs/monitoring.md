@@ -13,7 +13,7 @@ uptime sobre `/health` (configuração manual, fora do repo).
 `main.ts` — o SDK precisa interceptar módulos do Node antes de qualquer outro import) e
 `@sentry/nextjs` no web (`sentry.{client,server,edge}.config.ts` + `src/instrumentation.ts`).
 Ambos ficam inativos sem `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` configurado — ver
-[deploy.md](deploy.md#5-sentry--monitoramento-de-erros-opcional-fase-54) para provisionar.
+[deploy.md](deploy.md#6-sentry--monitoramento-de-erros-opcional-fase-54) para provisionar.
 
 Filtro de captura é o mesmo dos dois lados, espelhando a disciplina que já existia em
 `AllExceptionsFilter`/`error.tsx` (só 5xx é "erro de verdade"):

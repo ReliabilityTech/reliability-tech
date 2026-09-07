@@ -1,33 +1,38 @@
 import { type INestApplication } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 
-import { PrismaService } from '../../src/prisma/prisma.service';
 import { buildTestApp } from './build-test-app';
 import { criarTenantComFixtures, SENHA_FIXTURE } from './fixtures';
 
 /**
- * ADR 0006: RLS no Postgres ainda não está configurado — o isolamento entre
- * tenants depende inteiramente da disciplina de `where: { tenantId }` no
- * código. Um teste unitário com Prisma mockado não pega uma query que
- * esqueceu esse filtro, porque o mock devolve o que a gente mandar devolver.
- * Só um teste contra um banco de verdade, com dado de dois tenants de fato
- * sobreposto, pega esse tipo de vazamento.
+ * ADR 0006/roadmap 6.2: a disciplina de `where: { tenantId }` no código é a
+ * primeira barreira, RLS no Postgres é a segunda. Um teste unitário com
+ * Prisma mockado não pega uma query que esqueceu esse filtro, porque o mock
+ * devolve o que a gente mandar devolver. Só um teste contra um banco de
+ * verdade, com dado de dois tenants de fato sobreposto, pega esse tipo de
+ * vazamento (e prova RLS de fato bloqueando — ver row-level-security.integration-spec.ts).
+ *
+ * As fixtures usam uma conexão como `arbora` (superusuário, ignora RLS) em
+ * vez do `PrismaService` da aplicação: criar dado de setup fora de uma
+ * requisição não tem contexto de tenant nenhum no `AsyncLocalStorage`, e as
+ * políticas RLS são fail-closed — inserir como o papel restrito `arbora_app`
+ * sem esse contexto seria rejeitado pelo `WITH CHECK`.
  */
 describe('Isolamento entre tenants — GET /api/v1/alunos', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  const prismaAdmin = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
   beforeAll(async () => {
     app = await buildTestApp();
-    prisma = app.get(PrismaService);
 
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-a-integration',
       nomeTenant: 'Tenant A Integration',
       emailAdmin: 'admin-a@tenant-a-integration.local',
       nomesAlunos: ['Fixture Aluno A1', 'Fixture Aluno A2'],
     });
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-b-integration',
       nomeTenant: 'Tenant B Integration',
       emailAdmin: 'admin-b@tenant-b-integration.local',
@@ -36,6 +41,7 @@ describe('Isolamento entre tenants — GET /api/v1/alunos', () => {
   });
 
   afterAll(async () => {
+    await prismaAdmin.$disconnect();
     await app.close();
   });
 

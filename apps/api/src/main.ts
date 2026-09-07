@@ -6,10 +6,12 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
+import { tenantContextStorage } from './common/tenant-context';
 import { type Env, parseCorsOrigins } from './config/env';
 
 async function bootstrap(): Promise<void> {
@@ -22,6 +24,15 @@ async function bootstrap(): Promise<void> {
 
   app.use(helmet());
   app.use(cookieParser());
+  // Abre o escopo do AsyncLocalStorage pra cada requisição — o
+  // TenantContextInterceptor preenche tenantId/bypass depois que o AuthGuard
+  // roda (ver tenant-context.ts). Middleware Express, não interceptor: o
+  // `next.handle()` do Nest é um Observable frio, então abrir o `.run()` só
+  // no interceptor arriscaria o contexto não cobrir a execução assíncrona
+  // real do handler.
+  app.use((_req: Request, _res: Response, next: NextFunction) => {
+    tenantContextStorage.run({ tenantId: null, bypass: false }, next);
+  });
   app.enableCors({
     origin: parseCorsOrigins(config.get('CORS_ORIGINS', { infer: true })),
     credentials: true,

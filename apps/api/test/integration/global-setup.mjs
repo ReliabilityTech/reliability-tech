@@ -22,12 +22,38 @@ export default async function globalSetup() {
   process.env.DATABASE_URL = databaseUrl;
 
   // Migrações de verdade contra o banco efêmero — não `db push`, pra exercitar
-  // os mesmos arquivos de migração que chegam em produção (ver db:deploy).
+  // os mesmos arquivos de migração que chegam em produção (ver db:deploy). A
+  // migração de RLS (roadmap 6.2) cria o papel `arbora_app` NOLOGIN — a senha
+  // não entra em migração versionada (segredo); aqui, ambiente efêmero de
+  // teste, um valor fixo não-secreto é suficiente.
   execSync('prisma migrate deploy', {
     cwd: API_ROOT,
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: databaseUrl },
   });
+
+  const senhaAppRole = 'arbora_app';
+  const alterRole = await container.exec([
+    'psql',
+    '-U',
+    'arbora',
+    '-d',
+    'arbora_test',
+    '-c',
+    `ALTER ROLE arbora_app WITH LOGIN PASSWORD '${senhaAppRole}' NOSUPERUSER`,
+  ]);
+  if (alterRole.exitCode !== 0) {
+    throw new Error(`Falha ao dar login pro papel arbora_app: ${alterRole.output}`);
+  }
+
+  // `APP_DATABASE_URL` (lido por PrismaService via ConfigService) passa a
+  // apontar pro papel restrito — é como o próprio AppModule dos testes de
+  // integração roda dali em diante, exercitando as políticas RLS de verdade,
+  // não o superusuário `arbora` que só a migração usa.
+  const appDatabaseUrl = new URL(databaseUrl);
+  appDatabaseUrl.username = 'arbora_app';
+  appDatabaseUrl.password = senhaAppRole;
+  process.env.APP_DATABASE_URL = appDatabaseUrl.toString();
 
   globalThis.__ARBORA_PG_CONTAINER__ = container;
 }

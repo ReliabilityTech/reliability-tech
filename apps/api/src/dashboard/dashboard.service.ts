@@ -46,17 +46,17 @@ export class DashboardService {
     seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
 
     const [alunos, faltasHoje, comunicadosRecentes, auditoria] = await Promise.all([
-      this.prisma.aluno.findMany({
+      this.prisma.db.aluno.findMany({
         where: { tenantId, status: 'ATIVO', deletedAt: null },
         include: { turma: true },
       }),
-      this.prisma.presenca.count({
+      this.prisma.db.presenca.count({
         where: { status: 'FALTA', data: { gte: inicioHoje }, aluno: { tenantId } },
       }),
-      this.prisma.recado.count({
+      this.prisma.db.recado.count({
         where: { tenantId, publicadoEm: { gte: seteDiasAtras }, deletedAt: null },
       }),
-      this.prisma.auditLog.findMany({
+      this.prisma.db.auditLog.findMany({
         where: { tenantId },
         orderBy: { createdAt: 'desc' },
         take: 5,

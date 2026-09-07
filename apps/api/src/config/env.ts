@@ -11,6 +11,15 @@ export const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   DATABASE_URL: z.string().url('DATABASE_URL deve ser uma URL de conexão válida'),
+  /**
+   * Conexão de runtime da API, com o papel restrito `arbora_app` — não o
+   * superusuário `arbora` que `DATABASE_URL`/Prisma CLI usam pra migração.
+   * Precisa ser um papel sem BYPASSRLS/não-superusuário pras políticas RLS
+   * (roadmap 6.2, migração `20260907165617_rls_tenant_isolation`) valerem —
+   * superusuário sempre ignora RLS, então usar `DATABASE_URL` aqui tornaria
+   * a segunda camada de isolamento só encenação.
+   */
+  APP_DATABASE_URL: z.string().url('APP_DATABASE_URL deve ser uma URL de conexão válida'),
 
   /** Origens liberadas no CORS, separadas por vírgula. */
   CORS_ORIGINS: z.string().default('http://localhost:3000'),

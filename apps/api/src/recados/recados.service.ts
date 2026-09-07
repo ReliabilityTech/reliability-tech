@@ -8,7 +8,7 @@ export class RecadosService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(tenantId: string): Promise<RecadoListItem[]> {
-    const recados = await this.prisma.recado.findMany({
+    const recados = await this.prisma.db.recado.findMany({
       where: { tenantId, deletedAt: null },
       include: {
         autor: true,
@@ -50,7 +50,7 @@ export class RecadosService {
       throw new BadRequestException('alunoId é obrigatório quando destinatario é INDIVIDUAL');
     }
 
-    const recado = await this.prisma.recado.create({
+    const recado = await this.prisma.db.recado.create({
       data: {
         tenantId,
         autorId,
@@ -84,13 +84,13 @@ export class RecadosService {
     recado: { destinatario: string; turmaId: string | null; alunoId: string | null },
   ): Promise<number> {
     if (recado.destinatario === 'INDIVIDUAL' && recado.alunoId) {
-      return this.prisma.alunoResponsavel.count({ where: { alunoId: recado.alunoId } });
+      return this.prisma.db.alunoResponsavel.count({ where: { alunoId: recado.alunoId } });
     }
     if (recado.destinatario === 'TURMA' && recado.turmaId) {
-      return this.prisma.alunoResponsavel.count({
+      return this.prisma.db.alunoResponsavel.count({
         where: { aluno: { turmaId: recado.turmaId } },
       });
     }
-    return this.prisma.user.count({ where: { tenantId, role: 'RESPONSAVEL', deletedAt: null } });
+    return this.prisma.db.user.count({ where: { tenantId, role: 'RESPONSAVEL', deletedAt: null } });
   }
 }

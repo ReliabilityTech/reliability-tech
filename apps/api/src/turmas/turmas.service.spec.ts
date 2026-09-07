@@ -6,16 +6,16 @@ import { TurmasService } from './turmas.service';
 
 describe('TurmasService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       turma: { findMany: jest.fn(), create: jest.fn() },
       ...prismaOverrides,
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [TurmasService, { provide: PrismaService, useValue: prisma }],
+      providers: [TurmasService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(TurmasService), prisma };
+    return { service: moduleRef.get(TurmasService), prisma: db };
   };
 
   describe('listar', () => {

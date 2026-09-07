@@ -56,3 +56,23 @@ acesso — não herda `tenant_id` de contexto nenhum.
 **Quando revisitar:** se um tenant específico exigir isolamento físico contratual/legal, ou se o
 volume de dados de um tenant começar a degradar os demais — migrar esse tenant para banco
 dedicado é possível de forma incremental sem afetar os demais.
+
+## Atualização — RLS implementado (roadmap 6.2, 2026-09-07)
+
+A segunda camada (RLS) está configurada nas 8 tabelas com `tenantId` obrigatório e direto
+(`turmas`, `disciplinas`, `periodos_letivos`, `alunos`, `recados`, `conversas`, `eventos`,
+`notificacoes`) — ver migração `20260907165617_rls_tenant_isolation` e
+`apps/api/src/prisma/tenant-rls.extension.ts`.
+
+Achado que mudou o design original: o papel que roda migração (`arbora`) é superusuário
+(bootstrap do `initdb`), e superusuário sempre ignora RLS, sem exceção. A API passou a rodar com
+um papel novo e restrito (`arbora_app`, `APP_DATABASE_URL`), separado do papel de migração — sem
+essa separação, RLS seria encenação (política existe, mas nada bloqueia de verdade). Testado
+contra Postgres real (Testcontainers) provando que `arbora_app` é bloqueado e `arbora` não —
+`apps/api/test/integration/row-level-security.integration-spec.ts`.
+
+Ficam de fora desta rodada, deliberadamente: `users`/`refresh_tokens` (login busca o `User` por
+e-mail antes de saber o tenant — RLS fail-closed aqui quebraria login), `audit_logs` (`tenantId`
+nulo é legítimo pra ação de super-admin), e as ~10 tabelas "filhas" sem `tenantId` próprio (`notas`,
+`presencas`, `turma_disciplinas` etc. — precisariam de política via join, mais lenta e mais fácil
+de errar; dívida registrada em `docs/roadmap.md`, mesma receita desta rodada aplicável depois).

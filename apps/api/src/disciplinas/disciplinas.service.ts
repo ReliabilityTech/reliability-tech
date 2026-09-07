@@ -9,7 +9,7 @@ export class DisciplinasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(tenantId: string): Promise<DisciplinaListItem[]> {
-    const disciplinas = await this.prisma.disciplina.findMany({
+    const disciplinas = await this.prisma.db.disciplina.findMany({
       where: { tenantId, deletedAt: null },
       orderBy: { nome: 'asc' },
     });
@@ -19,7 +19,7 @@ export class DisciplinasService {
 
   async criar(tenantId: string, dados: CriarDisciplinaRequest): Promise<{ id: string }> {
     try {
-      const disciplina = await this.prisma.disciplina.create({ data: { tenantId, ...dados } });
+      const disciplina = await this.prisma.db.disciplina.create({ data: { tenantId, ...dados } });
       return { id: disciplina.id };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

@@ -18,7 +18,7 @@ export class ProfessorService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listarTurmas(tenantId: string, professorId: string): Promise<TurmaDisciplinaResumo[]> {
-    const turmasDisciplinas = await this.prisma.turmaDisciplina.findMany({
+    const turmasDisciplinas = await this.prisma.db.turmaDisciplina.findMany({
       where: { professorId, turma: { tenantId } },
       include: { turma: true, disciplina: true },
       orderBy: [{ turma: { nome: 'asc' } }, { disciplina: { nome: 'asc' } }],
@@ -33,7 +33,7 @@ export class ProfessorService {
   }
 
   async listarPeriodos(tenantId: string): Promise<PeriodoLetivoResumo[]> {
-    const periodos = await this.prisma.periodoLetivo.findMany({
+    const periodos = await this.prisma.db.periodoLetivo.findMany({
       where: { tenantId },
       orderBy: [{ anoLetivo: 'desc' }, { tipo: 'asc' }, { numero: 'asc' }],
       take: 12,
@@ -59,11 +59,11 @@ export class ProfessorService {
     );
 
     const [alunos, notas] = await Promise.all([
-      this.prisma.aluno.findMany({
+      this.prisma.db.aluno.findMany({
         where: { turmaId: turmaDisciplina.turmaId, deletedAt: null },
         orderBy: { nome: 'asc' },
       }),
-      this.prisma.nota.findMany({ where: { turmaDisciplinaId, periodoLetivoId } }),
+      this.prisma.db.nota.findMany({ where: { turmaDisciplinaId, periodoLetivoId } }),
     ]);
 
     const notaPorAluno = new Map(notas.map((nota) => [nota.alunoId, nota]));
@@ -88,7 +88,7 @@ export class ProfessorService {
   ): Promise<{ id: string }> {
     await this.assertTurmaDisciplinaDoProfessor(tenantId, professorId, body.turmaDisciplinaId);
 
-    const nota = await this.prisma.nota.upsert({
+    const nota = await this.prisma.db.nota.upsert({
       where: {
         alunoId_turmaDisciplinaId_periodoLetivoId: {
           alunoId: body.alunoId,
@@ -116,11 +116,11 @@ export class ProfessorService {
     );
 
     const [alunos, presencas] = await Promise.all([
-      this.prisma.aluno.findMany({
+      this.prisma.db.aluno.findMany({
         where: { turmaId: turmaDisciplina.turmaId, deletedAt: null },
         orderBy: { nome: 'asc' },
       }),
-      this.prisma.presenca.findMany({
+      this.prisma.db.presenca.findMany({
         where: { turmaDisciplinaId, data: new Date(data) },
       }),
     ]);
@@ -142,9 +142,9 @@ export class ProfessorService {
     await this.assertTurmaDisciplinaDoProfessor(tenantId, professorId, body.turmaDisciplinaId);
     const data = new Date(body.data);
 
-    await this.prisma.$transaction(
+    await this.prisma.db.$transaction(
       body.registros.map((registro) =>
-        this.prisma.presenca.upsert({
+        this.prisma.db.presenca.upsert({
           where: {
             alunoId_data_turmaDisciplinaId: {
               alunoId: registro.alunoId,
@@ -172,7 +172,7 @@ export class ProfessorService {
     professorId: string,
     turmaDisciplinaId: string,
   ): Promise<TurmaDisciplina> {
-    const turmaDisciplina = await this.prisma.turmaDisciplina.findFirst({
+    const turmaDisciplina = await this.prisma.db.turmaDisciplina.findFirst({
       where: { id: turmaDisciplinaId, professorId, turma: { tenantId } },
     });
     if (!turmaDisciplina) {

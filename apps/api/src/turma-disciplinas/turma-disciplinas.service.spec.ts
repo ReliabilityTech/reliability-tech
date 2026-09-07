@@ -6,7 +6,7 @@ import { TurmaDisciplinasService } from './turma-disciplinas.service';
 
 describe('TurmaDisciplinasService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
-    const prisma = {
+    const db = {
       turma: { findFirst: jest.fn().mockResolvedValue({ id: 'turma-1' }) },
       disciplina: { findFirst: jest.fn().mockResolvedValue({ id: 'disciplina-1' }) },
       user: { findFirst: jest.fn().mockResolvedValue({ id: 'prof-1', role: 'PROFESSOR' }) },
@@ -15,10 +15,10 @@ describe('TurmaDisciplinasService', () => {
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [TurmaDisciplinasService, { provide: PrismaService, useValue: prisma }],
+      providers: [TurmaDisciplinasService, { provide: PrismaService, useValue: { db } }],
     }).compile();
 
-    return { service: moduleRef.get(TurmaDisciplinasService), prisma };
+    return { service: moduleRef.get(TurmaDisciplinasService), prisma: db };
   };
 
   const dados = { turmaId: 'turma-1', disciplinaId: 'disciplina-1', professorId: 'prof-1' };

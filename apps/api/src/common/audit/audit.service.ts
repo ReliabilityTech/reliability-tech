@@ -26,7 +26,7 @@ export class AuditService {
    */
   async record(entry: AuditEntry): Promise<void> {
     try {
-      await this.prisma.auditLog.create({
+      await this.prisma.db.auditLog.create({
         data: {
           action: entry.action,
           entity: entry.entity,

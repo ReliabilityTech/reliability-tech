@@ -2,6 +2,7 @@ import { parseCorsOrigins, validateEnv } from './env';
 
 const baseEnv = {
   DATABASE_URL: 'postgresql://arbora:arbora@localhost:5432/arbora',
+  APP_DATABASE_URL: 'postgresql://arbora_app:arbora_app@localhost:5432/arbora',
   JWT_SECRET: 'a'.repeat(32),
 };
 
@@ -18,7 +19,13 @@ describe('validateEnv', () => {
   });
 
   it('falha quando DATABASE_URL está ausente', () => {
-    expect(() => validateEnv({ JWT_SECRET: 'a'.repeat(32) })).toThrow(/DATABASE_URL/);
+    expect(() => validateEnv({ ...baseEnv, DATABASE_URL: undefined })).toThrow(/DATABASE_URL/);
+  });
+
+  it('falha quando APP_DATABASE_URL está ausente', () => {
+    expect(() => validateEnv({ ...baseEnv, APP_DATABASE_URL: undefined })).toThrow(
+      /APP_DATABASE_URL/,
+    );
   });
 
   it('falha quando JWT_SECRET é curto demais', () => {

@@ -1,7 +1,7 @@
 import { type INestApplication } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 
-import { PrismaService } from '../../src/prisma/prisma.service';
 import { buildTestApp } from './build-test-app';
 import { criarTenantComFixtures, SENHA_FIXTURE } from './fixtures';
 
@@ -11,22 +11,27 @@ import { criarTenantComFixtures, SENHA_FIXTURE } from './fixtures';
  * outro tenant existe pra pegar (ver alunos.service.ts). Um teste unitário
  * com Prisma mockado não pegaria isso: o mock nunca teria um turmaId real de
  * outro tenant pra rejeitar.
+ *
+ * Fixtures usam uma conexão como `arbora` (superusuário, ignora RLS — ver
+ * roadmap 6.2) em vez do `PrismaService` da aplicação: fora de uma
+ * requisição não existe contexto de tenant no `AsyncLocalStorage`, e a
+ * política RLS é fail-closed — o papel restrito `arbora_app` não teria como
+ * inserir nada nesse setup.
  */
 describe('Isolamento entre tenants — escrita (POST /api/v1/turmas, /api/v1/alunos)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  const prismaAdmin = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
   beforeAll(async () => {
     app = await buildTestApp();
-    prisma = app.get(PrismaService);
 
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-a-academic',
       nomeTenant: 'Tenant A Academic',
       emailAdmin: 'admin-a@tenant-a-academic.local',
       nomesAlunos: [],
     });
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-b-academic',
       nomeTenant: 'Tenant B Academic',
       emailAdmin: 'admin-b@tenant-b-academic.local',
@@ -35,6 +40,7 @@ describe('Isolamento entre tenants — escrita (POST /api/v1/turmas, /api/v1/alu
   });
 
   afterAll(async () => {
+    await prismaAdmin.$disconnect();
     await app.close();
   });
 
@@ -95,19 +101,18 @@ describe('Isolamento entre tenants — escrita (POST /api/v1/turmas, /api/v1/alu
  */
 describe('Isolamento entre tenants — escrita (POST /api/v1/turma-disciplinas)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  const prismaAdmin = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL } } });
 
   beforeAll(async () => {
     app = await buildTestApp();
-    prisma = app.get(PrismaService);
 
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-a-td',
       nomeTenant: 'Tenant A TD',
       emailAdmin: 'admin-a@tenant-a-td.local',
       nomesAlunos: [],
     });
-    await criarTenantComFixtures(prisma, {
+    await criarTenantComFixtures(prismaAdmin, {
       slug: 'tenant-b-td',
       nomeTenant: 'Tenant B TD',
       emailAdmin: 'admin-b@tenant-b-td.local',
@@ -116,6 +121,7 @@ describe('Isolamento entre tenants — escrita (POST /api/v1/turma-disciplinas)'
   });
 
   afterAll(async () => {
+    await prismaAdmin.$disconnect();
     await app.close();
   });
 
@@ -133,13 +139,11 @@ describe('Isolamento entre tenants — escrita (POST /api/v1/turma-disciplinas)'
     const [respostaTurma, respostaDisciplina, respostaProfessor] = await Promise.all([
       agenteA.post('/api/v1/turmas').send({ nome: '7º Ano A', serie: '7º Ano', anoLetivo: 2026 }),
       agenteA.post('/api/v1/disciplinas').send({ nome: 'Ciências' }),
-      agenteA
-        .post('/api/v1/usuarios')
-        .send({
-          name: 'Professor A',
-          email: 'professor-a@tenant-a-td.local',
-          password: SENHA_FIXTURE,
-        }),
+      agenteA.post('/api/v1/usuarios').send({
+        name: 'Professor A',
+        email: 'professor-a@tenant-a-td.local',
+        password: SENHA_FIXTURE,
+      }),
     ]);
     const turmaIdDoTenantA = (respostaTurma.body as { id: string }).id;
     const disciplinaIdDoTenantA = (respostaDisciplina.body as { id: string }).id;

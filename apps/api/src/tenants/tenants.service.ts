@@ -9,7 +9,7 @@ export class TenantsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listar(): Promise<TenantListItem[]> {
-    const tenants = await this.prisma.tenant.findMany({
+    const tenants = await this.prisma.db.tenant.findMany({
       include: { _count: { select: { alunos: true } } },
       orderBy: { nome: 'asc' },
     });
@@ -26,7 +26,7 @@ export class TenantsService {
 
   async criar(dados: CriarTenantRequest): Promise<{ id: string }> {
     try {
-      const tenant = await this.prisma.tenant.create({ data: dados });
+      const tenant = await this.prisma.db.tenant.create({ data: dados });
       return { id: tenant.id };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -37,7 +37,10 @@ export class TenantsService {
   }
 
   async atualizarStatus(tenantId: string, status: TenantStatus): Promise<{ id: string }> {
-    const tenant = await this.prisma.tenant.update({ where: { id: tenantId }, data: { status } });
+    const tenant = await this.prisma.db.tenant.update({
+      where: { id: tenantId },
+      data: { status },
+    });
     return { id: tenant.id };
   }
 
@@ -47,9 +50,9 @@ export class TenantsService {
     totalAlunos: number;
   }> {
     const [instituicoesAtivas, instituicoesSuspensas, totalAlunos] = await Promise.all([
-      this.prisma.tenant.count({ where: { status: 'ATIVO' } }),
-      this.prisma.tenant.count({ where: { status: 'SUSPENSO' } }),
-      this.prisma.aluno.count({ where: { deletedAt: null } }),
+      this.prisma.db.tenant.count({ where: { status: 'ATIVO' } }),
+      this.prisma.db.tenant.count({ where: { status: 'SUSPENSO' } }),
+      this.prisma.db.aluno.count({ where: { deletedAt: null } }),
     ]);
     return { instituicoesAtivas, instituicoesSuspensas, totalAlunos };
   }

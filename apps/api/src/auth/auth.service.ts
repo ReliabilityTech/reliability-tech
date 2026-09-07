@@ -34,7 +34,10 @@ export class AuthService {
     senha: string,
     rememberMe: boolean,
   ): Promise<{ tokens: IssuedTokens; user: User }> {
-    const user = await this.prisma.user.findUnique({ where: { email }, include: { tenant: true } });
+    const user = await this.prisma.db.user.findUnique({
+      where: { email },
+      include: { tenant: true },
+    });
     const credenciaisInvalidas = () => new UnauthorizedException('E-mail ou senha inválidos');
 
     if (!user || user.deletedAt || !user.isActive) {
@@ -55,7 +58,7 @@ export class AuthService {
     const invalido = () => new UnauthorizedException('Sessão inválida ou expirada');
     const tokenHash = this.hashToken(rawRefreshToken);
 
-    const stored = await this.prisma.refreshToken.findUnique({
+    const stored = await this.prisma.db.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
     });
@@ -68,7 +71,7 @@ export class AuthService {
     }
 
     // Rotação: o token usado morre aqui, mesmo que a emissão do novo falhe.
-    await this.prisma.refreshToken.update({
+    await this.prisma.db.refreshToken.update({
       where: { id: stored.id },
       data: { revokedAt: new Date() },
     });
@@ -82,13 +85,13 @@ export class AuthService {
     rawRefreshToken: string,
   ): Promise<{ userId: string; tenantId: string | null } | undefined> {
     const tokenHash = this.hashToken(rawRefreshToken);
-    const stored = await this.prisma.refreshToken.findUnique({
+    const stored = await this.prisma.db.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
     });
     if (!stored || stored.revokedAt) return undefined;
 
-    await this.prisma.refreshToken.update({
+    await this.prisma.db.refreshToken.update({
       where: { id: stored.id },
       data: { revokedAt: new Date() },
     });
@@ -96,7 +99,7 @@ export class AuthService {
   }
 
   async me(userId: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.db.user.findUnique({ where: { id: userId } });
     if (!user || user.deletedAt || !user.isActive) {
       throw new UnauthorizedException('Sessão inválida ou expirada');
     }
@@ -132,7 +135,7 @@ export class AuthService {
       refreshTokenExpiresAt.getDate() + this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true }),
     );
 
-    await this.prisma.refreshToken.create({
+    await this.prisma.db.refreshToken.create({
       data: {
         userId: user.id,
         tokenHash: this.hashToken(refreshToken),
