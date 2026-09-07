@@ -1,0 +1,96 @@
+name: Backup do PostgreSQL
+
+# Dump lógico agendado (pg_dump) do Postgres de produção — roadmap 5.5. Ver
+# docs/backup.md pro desenho completo e o passo a passo do ensaio de
+# restauração (feito à mão, contra um ambiente descartável — não faz parte
+# deste workflow). O roundtrip pg_dump/pg_restore em si já tem teste
+# automatizado contra Postgres real:
+# apps/api/test/integration/backup-restore.integration-spec.ts.
+#
+# Pré-requisito (uma vez só, fora deste arquivo — ver docs/deploy.md):
+# - Um bucket Tigris (`fly storage create`) e um papel Postgres só-leitura
+#   dedicado a este backup (nunca a credencial de escrita que a API usa —
+#   um secret de CI vazado não deveria conseguir apagar dado nenhum).
+# - No ambiente `production` (e, se quiser backup de staging também, no
+#   `staging`) em Settings → Environments: os secrets FLY_API_TOKEN (já
+#   existe, Fase 5.3), BACKUP_DB_USER, BACKUP_DB_PASSWORD,
+#   AWS_ACCESS_KEY_ID e AWS_SECRET_ACCESS_KEY (credenciais do Tigris); e as
+#   variables BACKUP_DB_NAME, BACKUP_S3_BUCKET, BACKUP_S3_ENDPOINT.
+#
+# Não validado contra uma conta Fly/Tigris real (a sessão que escreveu isso
+# não tinha credencial pra testar) — em especial o `flyctl proxy` em CI:
+# funciona localmente de forma bem estabelecida, mas o tempo de provisionar
+# o peer WireGuard num runner efêmero, todo dia, é a parte mais arriscada
+# deste workflow. Rode manualmente (workflow_dispatch) e confira os logs
+# antes de confiar só no agendamento.
+on:
+  schedule:
+    # 03h em São Paulo (UTC-3) — fora do horário de uso da escola.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: 'Ambiente de origem do backup'
+        required: true
+        type: choice
+        options: [staging, production]
+        default: production
+
+concurrency:
+  group: backup-${{ github.event.inputs.ambiente || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump e upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.event.inputs.ambiente || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Instalar postgresql-client 17 (mesma major do Postgres do Fly)
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Resolver o app de Postgres do ambiente
+        id: config
+        run: |
+          if [ "${{ github.event.inputs.ambiente || 'production' }}" = "staging" ]; then
+            echo "db_app=reliability-tech-db-staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "db_app=reliability-tech-db-production" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abrir túnel até o Postgres (flyctl proxy)
+        run: |
+          flyctl proxy 5432:5432 -a ${{ steps.config.outputs.db_app }} &
+          echo $! > /tmp/proxy.pid
+          for i in $(seq 1 30); do
+            pg_isready -h 127.0.0.1 -p 5432 -t 2 && break
+            sleep 2
+          done
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Backup
+        run: bash apps/api/scripts/backup-db.sh
+        env:
+          DATABASE_URL: postgresql://${{ secrets.BACKUP_DB_USER }}:${{ secrets.BACKUP_DB_PASSWORD }}@127.0.0.1:5432/${{ vars.BACKUP_DB_NAME }}
+          BACKUP_LABEL: ${{ github.event.inputs.ambiente || 'production' }}
+          BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Fechar túnel
+        if: always()
+        run: kill "$(cat /tmp/proxy.pid)" 2>/dev/null || true

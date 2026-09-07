@@ -91,7 +91,16 @@ disciplina já existente em `AllExceptionsFilter`/`error.tsx`. `SENTRY_AUTH_TOKE
 escrita) nunca é `ARG`/`ENV` de imagem — entra via BuildKit secret mount
 (`apps/web/Dockerfile`), pra não vazar em `docker history`/cache do CI. Provisionamento e alerta
 de uptime sobre `/health` em `docs/deploy.md`/`docs/monitoring.md` — **não validado contra conta
-Sentry real**. 5.5 e 5.6 (backup, renovação de dependências) seguem pendentes.
+Sentry real**.
+
+**Fase 5.5 (backup) concluída**: `.github/workflows/backup.yml` roda `pg_dump`
+(`apps/api/scripts/backup-db.sh`) todo dia contra o Postgres de produção via `flyctl proxy`,
+sobe o dump num bucket Tigris usando um papel Postgres dedicado só-leitura (nunca o
+`DATABASE_URL` de escrita da API). `apps/api/scripts/restore-db.sh` faz o caminho inverso.
+A mecânica de dump/restore tem teste automatizado contra Postgres real, não mock —
+`apps/api/test/integration/backup-restore.integration-spec.ts` — provando "restauração
+testada" de fato. `docs/backup.md` tem o provisionamento e o ensaio manual — **não validado
+contra conta Fly/Tigris real**. 5.6 (renovação automática de dependências) segue pendente.
 
 Antes de mexer no domínio, leia:
 
@@ -111,4 +120,5 @@ inventar** — e registre a hipótese em um ADR se precisar seguir mesmo assim.
 ## Documentação
 
 `docs/arquitetura.md`, `docs/convencoes.md`, `docs/design-system.md`, `docs/adr/`, `docs/deploy.md`
-(provisionamento Fly.io — staging e produção).
+(provisionamento Fly.io — staging e produção), `docs/monitoring.md` (Sentry e alerta de uptime),
+`docs/backup.md` (backup e restauração do Postgres).

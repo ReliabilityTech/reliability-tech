@@ -104,6 +104,10 @@ em runtime a partir do `SENTRY_DSN`.
 
 Ver [monitoring.md](monitoring.md) para o alerta de uptime sobre `/health`.
 
+Ver [backup.md](backup.md) para o bucket Tigris, o papel Postgres só-leitura e os segredos do
+backup automatizado (Fase 5.5) — provisionamento independente deste, pode ser feito em qualquer
+ordem.
+
 ## 6. Testar manualmente antes de confiar no pipeline
 
 ```bash

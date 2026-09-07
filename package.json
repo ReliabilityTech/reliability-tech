@@ -30,6 +30,8 @@
     "db:deploy": "pnpm --filter @arbora/api db:deploy",
     "db:seed": "pnpm --filter @arbora/api db:seed",
     "db:studio": "pnpm --filter @arbora/api db:studio",
+    "db:backup": "pnpm --filter @arbora/api db:backup",
+    "db:restore": "pnpm --filter @arbora/api db:restore",
     "prepare": "husky"
   },
   "pnpm": {
