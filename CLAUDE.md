@@ -72,9 +72,12 @@ saíram do "só existe via seed" que a matriz de rastreabilidade apontou: `apps/
 a turma+disciplina continuam pendentes — ver `docs/requisitos/rastreabilidade.md`.
 
 **Fase 5.1 (Dockerfile de produção) concluída**: `apps/api/Dockerfile` e `apps/web/Dockerfile`,
-multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postgres real. 5.2 a 5.6
-(pipeline de deploy, staging/produção, monitoramento, backup, renovação de dependências) seguem
-pendentes — a maioria depende da decisão de hospedagem (roadmap 0.4, ainda em aberto).
+multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postgres real. Fase 5.2
+(pipeline de deploy) também: `.github/workflows/deploy.yml` builda/publica as imagens no GHCR e
+roda `prisma migrate deploy` contra o `DATABASE_URL` do ambiente escolhido — disparo manual de
+propósito, sem ambiente real ainda. 5.3 a 5.6 (staging/produção, monitoramento, backup, renovação
+de dependências) seguem pendentes — a maioria depende da decisão de hospedagem (roadmap 0.4, ainda
+em aberto).
 
 Antes de mexer no domínio, leia:
 

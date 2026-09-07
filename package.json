@@ -27,6 +27,7 @@
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:reset": "docker compose -f infra/docker-compose.yml down -v && pnpm infra:up",
     "db:migrate": "pnpm --filter @arbora/api db:migrate",
+    "db:deploy": "pnpm --filter @arbora/api db:deploy",
     "db:seed": "pnpm --filter @arbora/api db:seed",
     "db:studio": "pnpm --filter @arbora/api db:studio",
     "prepare": "husky"
