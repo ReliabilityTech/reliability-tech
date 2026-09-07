@@ -100,7 +100,14 @@ sobe o dump num bucket Tigris usando um papel Postgres dedicado só-leitura (nun
 A mecânica de dump/restore tem teste automatizado contra Postgres real, não mock —
 `apps/api/test/integration/backup-restore.integration-spec.ts` — provando "restauração
 testada" de fato. `docs/backup.md` tem o provisionamento e o ensaio manual — **não validado
-contra conta Fly/Tigris real**. 5.6 (renovação automática de dependências) segue pendente.
+contra conta Fly/Tigris real**.
+
+**Fase 5.6 (renovação de dependências) concluída, Fase 5 completa**: `.github/dependabot.yml` —
+Dependabot (nativo do GitHub, sem app terceiro) cobre o workspace pnpm inteiro (um entry `npm`
+detecta os workspaces a partir do `pnpm-lock.yaml` na raiz), as actions dos 3 workflows e a
+imagem base dos dois Dockerfile. Minor/patch entram agrupados por categoria; major sempre isolado.
+Abre PR, não faz merge sozinho — cada um passa pelo `pull_request` de `ci.yml` e espera revisão
+humana.
 
 Antes de mexer no domínio, leia:
 

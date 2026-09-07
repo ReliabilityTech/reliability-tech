@@ -1,0 +1,66 @@
+# Renovação automática de dependências — roadmap 5.6. Abre PR, não faz
+# merge sozinho: cada PR passa pelo mesmo gate de .github/workflows/ci.yml
+# (pull_request já roda em qualquer branch, Dependabot incluso) e espera
+# revisão humana — merge automático de dependência em produção de escola é
+# risco desnecessário pra um projeto deste tamanho, sem CD contínuo real.
+#
+# Minor/patch entram agrupados num PR só por categoria, pra não inundar de
+# PR toda semana; major nunca é agrupado — sempre isolado, exige decisão
+# deliberada (pode ter breaking change).
+version: 2
+updates:
+  # pnpm workspace inteiro num entry só: o Dependabot detecta os workspaces
+  # a partir do pnpm-lock.yaml na raiz e atualiza os package.json de
+  # apps/api, apps/web e packages/* juntos, respeitando o lockfile único.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 10
+    groups:
+      dependencias-de-desenvolvimento:
+        dependency-type: 'development'
+        update-types: ['minor', 'patch']
+      dependencias-de-producao:
+        dependency-type: 'production'
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+
+  # Versão das actions usadas em .github/workflows/ (actions/checkout,
+  # docker/build-push-action etc.) — prega tanto risco de segurança quanto
+  # breaking change quieto quanto qualquer dependência de código.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    groups:
+      github-actions:
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+
+  # Imagem base dos dois Dockerfile de produção (node:22-alpine) — ver
+  # roadmap 5.1. Bump de major aqui merece atenção: o .nvmrc na raiz também
+  # fixa a versão do Node pro dev local, os dois precisam ficar alinhados.
+  - package-ecosystem: 'docker'
+    directory: '/apps/api'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/web'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
