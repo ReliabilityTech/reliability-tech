@@ -15,6 +15,9 @@ export class UsuariosService {
   async listarProfessores(tenantId: string): Promise<ProfessorListItem[]> {
     const professores = await this.prisma.user.findMany({
       where: { tenantId, role: UserRole.PROFESSOR, deletedAt: null },
+      include: {
+        turmasLecionadas: { include: { turma: true, disciplina: true } },
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -23,6 +26,9 @@ export class UsuariosService {
       name: professor.name,
       email: professor.email,
       createdAt: professor.createdAt.toISOString(),
+      turmasAtribuidas: professor.turmasLecionadas.map(
+        (td) => `${td.turma.nome} — ${td.disciplina.nome}`,
+      ),
     }));
   }
 

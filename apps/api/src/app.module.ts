@@ -20,6 +20,7 @@ import { ProfessorModule } from './professor/professor.module';
 import { RecadosModule } from './recados/recados.module';
 import { ResponsavelModule } from './responsavel/responsavel.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { TurmaDisciplinasModule } from './turma-disciplinas/turma-disciplinas.module';
 import { TurmasModule } from './turmas/turmas.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 
@@ -81,6 +82,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
     TenantsModule,
     TurmasModule,
     DisciplinasModule,
+    TurmaDisciplinasModule,
     UsuariosModule,
     DashboardModule,
   ],

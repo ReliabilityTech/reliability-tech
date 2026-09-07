@@ -112,10 +112,15 @@ humana.
 **Fase 6 (lacunas restantes e evolução)** cobre três frentes independentes, ver
 `docs/roadmap.md`: 6.1 lacunas funcionais restantes, 6.2 RLS no Postgres, 6.3 PWA + split de
 monorepo (este último só quando o usuário confirmar que "as condições estão favoráveis" — não
-começar sem pedido explícito). Dentro de 6.1, vínculo responsável↔aluno (RF-004) está concluído:
+começar sem pedido explícito). **Fase 6.1 está completa**: vínculo responsável↔aluno (RF-004) —
 `POST`/`DELETE /alunos/:id/responsaveis` resolve por e-mail, reaproveitando uma conta
 `RESPONSAVEL` existente do mesmo tenant em vez de duplicar (RF-004 cita "pai e mãe separados,
-ambos com acesso"). Atribuição professor↔turma+disciplina (a outra metade de 6.1) segue pendente.
+ambos com acesso"). Atribuição professor↔turma+disciplina — `apps/api/src/turma-disciplinas/`
+(`POST /turma-disciplinas`, upsert por `[turmaId, disciplinaId]`), `usuarios.service.ts` ganha
+`turmasAtribuidas`. Unitário/integração(Postgres real)/componente verificados verdes; o caso E2E
+existe em `apps/web/e2e/admin.spec.ts` mas **não foi verificado rodando** nesta sessão — máquina
+com CPU a 90%+/RAM livre baixa no momento, todas as falhas foram timeout de compilação/navegação,
+nunca uma asserção quebrada. 6.2 (RLS) e 6.3 (PWA+split) seguem pendentes, não iniciados.
 
 Antes de mexer no domínio, leia:
 

@@ -92,3 +92,57 @@ test('vincula um responsável a um aluno existente, criando a conta', async ({ p
   await expect(page.getByText('Responsável E2E')).toBeVisible();
   await expect(page.getByText('responsavel-e2e@exemplo.com')).toBeVisible();
 });
+
+test('atribui um professor a uma turma+disciplina, e ele vê a turma ao logar (RF-009)', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/turmas');
+  await page.getByRole('button', { name: 'Nova turma' }).click();
+  let dialog = page.locator('dialog');
+  await dialog.getByLabel('Nome').fill('Turma E2E');
+  await dialog.getByLabel('Série').fill('9º Ano');
+  await dialog.getByRole('button', { name: 'Cadastrar' }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.goto('/disciplinas');
+  await page.getByRole('button', { name: 'Nova disciplina' }).click();
+  dialog = page.locator('dialog');
+  await dialog.getByLabel('Nome').fill('Disciplina E2E');
+  await dialog.getByRole('button', { name: 'Cadastrar' }).click();
+  await expect(dialog).toBeHidden();
+
+  const email = `professor-e2e-${Date.now()}@exemplo.com`;
+  const senha = 'SenhaForte123';
+  await page.goto('/professores');
+  await page.getByRole('button', { name: 'Novo professor' }).click();
+  dialog = page.locator('dialog');
+  await dialog.getByLabel('Nome').fill('Professor E2E');
+  await dialog.getByLabel('E-mail').fill(email);
+  await dialog.getByLabel('Senha inicial').fill(senha);
+  await dialog.getByRole('button', { name: 'Cadastrar' }).click();
+  await expect(dialog).toBeHidden();
+
+  const linhaProfessor = page.locator('tr', { hasText: 'Professor E2E' });
+  await linhaProfessor.getByRole('button', { name: 'Atribuir turma' }).click();
+  dialog = page.locator('dialog');
+  await dialog.getByLabel('Turma').selectOption({ label: 'Turma E2E' });
+  await dialog.getByLabel('Disciplina').selectOption({ label: 'Disciplina E2E' });
+  await dialog.getByRole('button', { name: 'Atribuir' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(linhaProfessor.getByText('Turma E2E — Disciplina E2E')).toBeVisible();
+
+  // Sessão à parte, sem o storageState de admin: login de verdade como o
+  // professor recém-criado, pra provar que a atribuição libera "Minhas
+  // turmas" de ponta a ponta, não só que o registro existe no banco.
+  const contextoProfessor = await browser.newContext();
+  const paginaProfessor = await contextoProfessor.newPage();
+  await paginaProfessor.goto('/login');
+  await paginaProfessor.getByLabel('E-mail').fill(email);
+  await paginaProfessor.getByLabel('Senha').fill(senha);
+  await paginaProfessor.getByRole('button', { name: 'Entrar' }).click();
+  await expect(paginaProfessor).toHaveURL(/\/dashboard/);
+  await expect(paginaProfessor.getByText('Disciplina E2E')).toBeVisible();
+  await expect(paginaProfessor.getByText('Turma E2E')).toBeVisible();
+  await contextoProfessor.close();
+});

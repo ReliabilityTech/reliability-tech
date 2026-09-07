@@ -86,3 +86,141 @@ describe('Isolamento entre tenants — escrita (POST /api/v1/turmas, /api/v1/alu
       .expect(201);
   });
 });
+
+/**
+ * Mesma lógica do describe acima, pra POST /api/v1/turma-disciplinas: um
+ * teste unitário com Prisma mockado nunca teria um turmaId/disciplinaId/
+ * professorId reais de outro tenant pra rejeitar — só um banco de verdade
+ * com dois tenants sobrepostos pega essa omissão.
+ */
+describe('Isolamento entre tenants — escrita (POST /api/v1/turma-disciplinas)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    app = await buildTestApp();
+    prisma = app.get(PrismaService);
+
+    await criarTenantComFixtures(prisma, {
+      slug: 'tenant-a-td',
+      nomeTenant: 'Tenant A TD',
+      emailAdmin: 'admin-a@tenant-a-td.local',
+      nomesAlunos: [],
+    });
+    await criarTenantComFixtures(prisma, {
+      slug: 'tenant-b-td',
+      nomeTenant: 'Tenant B TD',
+      emailAdmin: 'admin-b@tenant-b-td.local',
+      nomesAlunos: [],
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  async function loginComo(email: string): Promise<ReturnType<typeof request.agent>> {
+    const agent = request.agent(app.getHttpServer());
+    await agent
+      .post('/api/v1/auth/login')
+      .send({ email, password: SENHA_FIXTURE, rememberMe: false })
+      .expect(200);
+    return agent;
+  }
+
+  it('rejeita atribuir turma, disciplina e professor de outro tenant', async () => {
+    const agenteA = await loginComo('admin-a@tenant-a-td.local');
+    const [respostaTurma, respostaDisciplina, respostaProfessor] = await Promise.all([
+      agenteA.post('/api/v1/turmas').send({ nome: '7º Ano A', serie: '7º Ano', anoLetivo: 2026 }),
+      agenteA.post('/api/v1/disciplinas').send({ nome: 'Ciências' }),
+      agenteA
+        .post('/api/v1/usuarios')
+        .send({
+          name: 'Professor A',
+          email: 'professor-a@tenant-a-td.local',
+          password: SENHA_FIXTURE,
+        }),
+    ]);
+    const turmaIdDoTenantA = (respostaTurma.body as { id: string }).id;
+    const disciplinaIdDoTenantA = (respostaDisciplina.body as { id: string }).id;
+    const professorIdDoTenantA = (respostaProfessor.body as { id: string }).id;
+
+    const agenteB = await loginComo('admin-b@tenant-b-td.local');
+    const respostaTurmaB = await agenteB
+      .post('/api/v1/turmas')
+      .send({ nome: '7º Ano B', serie: '7º Ano', anoLetivo: 2026 })
+      .expect(201);
+    const respostaDisciplinaB = await agenteB
+      .post('/api/v1/disciplinas')
+      .send({ nome: 'Artes' })
+      .expect(201);
+    const respostaProfessorB = await agenteB
+      .post('/api/v1/usuarios')
+      .send({
+        name: 'Professor B',
+        email: 'professor-b@tenant-b-td.local',
+        password: SENHA_FIXTURE,
+      })
+      .expect(201);
+
+    await agenteB
+      .post('/api/v1/turma-disciplinas')
+      .send({
+        turmaId: turmaIdDoTenantA,
+        disciplinaId: (respostaDisciplinaB.body as { id: string }).id,
+        professorId: (respostaProfessorB.body as { id: string }).id,
+      })
+      .expect(400);
+    await agenteB
+      .post('/api/v1/turma-disciplinas')
+      .send({
+        turmaId: (respostaTurmaB.body as { id: string }).id,
+        disciplinaId: disciplinaIdDoTenantA,
+        professorId: (respostaProfessorB.body as { id: string }).id,
+      })
+      .expect(400);
+    await agenteB
+      .post('/api/v1/turma-disciplinas')
+      .send({
+        turmaId: (respostaTurmaB.body as { id: string }).id,
+        disciplinaId: (respostaDisciplinaB.body as { id: string }).id,
+        professorId: professorIdDoTenantA,
+      })
+      .expect(400);
+  });
+
+  it('atribui turma+disciplina+professor do mesmo tenant, e reatribuir troca o professor', async () => {
+    const agenteA = await loginComo('admin-a@tenant-a-td.local');
+    const [respostaTurma, respostaDisciplina, respostaProfessor1, respostaProfessor2] =
+      await Promise.all([
+        agenteA.post('/api/v1/turmas').send({ nome: '8º Ano A', serie: '8º Ano', anoLetivo: 2026 }),
+        agenteA.post('/api/v1/disciplinas').send({ nome: 'História' }),
+        agenteA.post('/api/v1/usuarios').send({
+          name: 'Professor Primeiro',
+          email: 'professor-primeiro@tenant-a-td.local',
+          password: SENHA_FIXTURE,
+        }),
+        agenteA.post('/api/v1/usuarios').send({
+          name: 'Professor Segundo',
+          email: 'professor-segundo@tenant-a-td.local',
+          password: SENHA_FIXTURE,
+        }),
+      ]);
+    const turmaId = (respostaTurma.body as { id: string }).id;
+    const disciplinaId = (respostaDisciplina.body as { id: string }).id;
+    const professor1Id = (respostaProfessor1.body as { id: string }).id;
+    const professor2Id = (respostaProfessor2.body as { id: string }).id;
+
+    const primeira = await agenteA
+      .post('/api/v1/turma-disciplinas')
+      .send({ turmaId, disciplinaId, professorId: professor1Id })
+      .expect(201);
+
+    const reatribuida = await agenteA
+      .post('/api/v1/turma-disciplinas')
+      .send({ turmaId, disciplinaId, professorId: professor2Id })
+      .expect(201);
+
+    expect((reatribuida.body as { id: string }).id).toBe((primeira.body as { id: string }).id);
+  });
+});

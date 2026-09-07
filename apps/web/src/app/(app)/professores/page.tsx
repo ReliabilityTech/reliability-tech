@@ -1,6 +1,9 @@
+import { listarDisciplinas } from '@/lib/disciplinas';
 import { requireRole } from '@/lib/server-session';
+import { listarTurmas } from '@/lib/turmas';
 import { listarProfessores } from '@/lib/usuarios';
 
+import { AtribuirTurmaDialog } from './atribuir-turma-dialog';
 import { NovoProfessorDialog } from './novo-professor-dialog';
 
 function formatarData(iso: string): string {
@@ -13,7 +16,11 @@ function formatarData(iso: string): string {
 
 export default async function ProfessoresPage() {
   await requireRole(['ADMIN_ESCOLAR', 'COORDENACAO']);
-  const professores = await listarProfessores();
+  const [professores, turmas, disciplinas] = await Promise.all([
+    listarProfessores(),
+    listarTurmas(),
+    listarDisciplinas(),
+  ]);
 
   return (
     <div className="p-8">
@@ -40,6 +47,8 @@ export default async function ProfessoresPage() {
                   <th className="px-4 py-3 font-medium">Nome</th>
                   <th className="px-4 py-3 font-medium">E-mail</th>
                   <th className="px-4 py-3 font-medium">Desde</th>
+                  <th className="px-4 py-3 font-medium">Turmas atribuídas</th>
+                  <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -51,6 +60,18 @@ export default async function ProfessoresPage() {
                     </td>
                     <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
                       {formatarData(professor.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--color-foreground-muted)]">
+                      {professor.turmasAtribuidas.length > 0
+                        ? professor.turmasAtribuidas.join(', ')
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <AtribuirTurmaDialog
+                        professorId={professor.id}
+                        turmas={turmas}
+                        disciplinas={disciplinas}
+                      />
                     </td>
                   </tr>
                 ))}

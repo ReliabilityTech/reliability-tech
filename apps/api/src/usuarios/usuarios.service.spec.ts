@@ -34,6 +34,7 @@ describe('UsuariosService', () => {
               name: 'Professor João',
               email: 'joao@escola.local',
               createdAt: new Date('2026-01-01T00:00:00.000Z'),
+              turmasLecionadas: [],
             },
           ]),
         },
@@ -47,12 +48,40 @@ describe('UsuariosService', () => {
           name: 'Professor João',
           email: 'joao@escola.local',
           createdAt: '2026-01-01T00:00:00.000Z',
+          turmasAtribuidas: [],
         },
       ]);
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         where: { tenantId: 'tenant-1', role: 'PROFESSOR', deletedAt: null },
+        include: { turmasLecionadas: { include: { turma: true, disciplina: true } } },
         orderBy: { name: 'asc' },
       });
+    });
+
+    it('formata as turmas atribuídas como "<turma> — <disciplina>"', async () => {
+      const { service } = await criarServico({
+        user: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'prof-1',
+              name: 'Professor João',
+              email: 'joao@escola.local',
+              createdAt: new Date('2026-01-01T00:00:00.000Z'),
+              turmasLecionadas: [
+                { turma: { nome: '5º Ano A' }, disciplina: { nome: 'Matemática' } },
+                { turma: { nome: '6º Ano B' }, disciplina: { nome: 'Português' } },
+              ],
+            },
+          ]),
+        },
+      });
+
+      const resultado = await service.listarProfessores('tenant-1');
+
+      expect(resultado[0]?.turmasAtribuidas).toEqual([
+        '5º Ano A — Matemática',
+        '6º Ano B — Português',
+      ]);
     });
   });
 

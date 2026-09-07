@@ -115,8 +115,17 @@ export const professorListItemSchema = z.object({
   name: z.string(),
   email: z.string(),
   createdAt: isoDateTimeSchema,
+  /** Strings "<turma> — <disciplina>" já formatadas — mesmo padrão do `responsaveis` de `alunoListItemSchema`. */
+  turmasAtribuidas: z.array(z.string()),
 });
 export type ProfessorListItem = z.infer<typeof professorListItemSchema>;
+
+export const criarTurmaDisciplinaRequestSchema = z.object({
+  turmaId: idSchema,
+  disciplinaId: idSchema,
+  professorId: idSchema,
+});
+export type CriarTurmaDisciplinaRequest = z.infer<typeof criarTurmaDisciplinaRequestSchema>;
 
 // ---------------------------------------------------------------------------
 // Professor: turmas, notas, chamada (RF-010, RF-012)
