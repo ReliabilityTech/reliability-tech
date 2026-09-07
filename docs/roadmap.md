@@ -57,14 +57,14 @@ ADR 0004). Outras dívidas na tabela ao final deste documento.
 
 ## Fase 5 — Operação
 
-| # | Tarefa |
-| - | ------ |
-| 5.1 | Dockerfile de produção para API e web (o Next já gera `standalone`) |
-| 5.2 | Pipeline de deploy com `prisma migrate deploy` |
-| 5.3 | Ambientes de staging e produção com segredos gerenciados |
-| 5.4 | Monitoramento de erros (Sentry ou equivalente) e alertas sobre `/health` |
-| 5.5 | Backup automatizado do PostgreSQL, com restauração testada |
-| 5.6 | Renovação automática de dependências (Dependabot ou Renovate) |
+| # | Tarefa | Status |
+| - | ------ | ------ |
+| 5.1 | Dockerfile de produção para API e web (o Next já gera `standalone`) | ✅ Concluído em 2026-09-07 — `apps/api/Dockerfile` e `apps/web/Dockerfile`, multi-stage com `turbo prune --docker` (isola só o que cada app precisa antes de instalar) + `pnpm install --frozen-lockfile` + build. Web usa a saída `standalone` do Next (copia só `.next/standalone` + `.next/static`, ~344MB); API sobe com devDependencies incluídas (~1.08GB) — `pnpm prune --prod` corrompe os symlinks do pnpm contra o lockfile já reduzido pelo turbo prune (o pacote fica no `.pnpm` store, o link em `node_modules` some, "Cannot find module" em runtime), então foi abandonado em favor de uma imagem maior mas correta; otimizar o tamanho fica pra depois. `NEXT_PUBLIC_*` entra como `ARG` (inlinado no bundle em build time, não lido em runtime) — precisa de valor default explícito no Dockerfile, não só o fallback de `env.ts`, porque um `ARG` sem `--build-arg` vira string vazia, não `undefined`, e `??` não cai no fallback pra string vazia. Testado de ponta a ponta: `docker build` + container rodando contra o Postgres real (`arbora_default`), `/api/v1/health` responde `ok` e `/login` renderiza | 
+| 5.2 | Pipeline de deploy com `prisma migrate deploy` | Pendente |
+| 5.3 | Ambientes de staging e produção com segredos gerenciados | Pendente |
+| 5.4 | Monitoramento de erros (Sentry ou equivalente) e alertas sobre `/health` | Pendente |
+| 5.5 | Backup automatizado do PostgreSQL, com restauração testada | Pendente |
+| 5.6 | Renovação automática de dependências (Dependabot ou Renovate) | Pendente |
 
 ## Dívidas técnicas conhecidas
 
@@ -74,7 +74,7 @@ Registradas aqui de forma consciente, não esquecidas:
 | ---- | ---- | -------------- |
 | RLS por `tenant_id` não configurado no Postgres | banco (ver ADR 0006) | Isolamento entre tenants depende só da aplicação por enquanto |
 | Sem cache remoto do Turborepo | `turbo.json` | Só compensa com o time maior; hoje o cache é local |
-| Sem testes E2E | — | Depende de haver telas reais |
+| Imagem Docker da API inclui devDependencies (~1.08GB) | `apps/api/Dockerfile` | `pnpm prune --prod` corrompe os symlinks do pnpm contra o lockfile reduzido pelo `turbo prune` — corrigir isso é otimização de tamanho, não bug funcional |
 | `middleware.ts` chama a API a cada navegação | `apps/web/src/middleware.ts` | Simples e correto; otimizar (JWT local) se a latência incomodar |
 | Sem refresh silencioso no front | `apps/web/src/lib/auth.ts` | Access token expirado em uso só é pego na próxima navegação, via redirect — mutações client-side (`apiFetch`) podem falhar com 401 se o access token expirar no meio da sessão |
 | Seed não é idempotente para `Recado`, `Evento`, `Ocorrencia` e `Movimentacao` | `apps/api/prisma/seed.ts` | Usam `create` em vez de `upsert` (sem chave natural óbvia); rodar `db:seed` mais de uma vez duplica essas linhas — truncar as tabelas antes de re-semear |

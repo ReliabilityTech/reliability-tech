@@ -1,0 +1,30 @@
+# Contexto de build dos Dockerfiles em apps/api e apps/web — mesma lista do
+# .gitignore, mais .git em si (nunca precisa ir pra dentro da imagem).
+.git/
+
+node_modules/
+.pnpm-store/
+
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+.auth/
+
+.env
+.env.*
+!.env.example
+
+*.log
+
+.DS_Store
+Thumbs.db
+.idea/
+*.swp

@@ -65,6 +65,17 @@ está pronto (4.4). Componentes com lógica real (`ThemeToggle`, `error.tsx`, `N
 `NovoRecadoDialog`, `NovoEventoDialog`, `ChamadaList`) têm teste via Vitest + Testing Library,
 ambiente `jsdom` configurado em `apps/web/vitest.config.ts`/`vitest.setup.ts` (4.5).
 
+RF-007 (cadastro de instituição) e RF-009 (cadastro de turma/disciplina/aluno/professor) também
+saíram do "só existe via seed" que a matriz de rastreabilidade apontou: `apps/api/src/tenants/`,
+`turmas/`, `disciplinas/`, `usuarios/` e `alunos/` agora têm `POST` de verdade, com tela própria em
+`apps/web/src/app/(app)/`. Vincular responsável ao aluno no cadastro (RF-004) e atribuir professor
+a turma+disciplina continuam pendentes — ver `docs/requisitos/rastreabilidade.md`.
+
+**Fase 5.1 (Dockerfile de produção) concluída**: `apps/api/Dockerfile` e `apps/web/Dockerfile`,
+multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postgres real. 5.2 a 5.6
+(pipeline de deploy, staging/produção, monitoramento, backup, renovação de dependências) seguem
+pendentes — a maioria depende da decisão de hospedagem (roadmap 0.4, ainda em aberto).
+
 Antes de mexer no domínio, leia:
 
 - `docs/requisitos/funcionais.md` e `docs/requisitos/nao-funcionais.md` — RF-NNN/RNF-NNN, fonte
