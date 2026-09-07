@@ -7,7 +7,7 @@
 # final — código-fonte não entra, mas devDependencies ficam, ver nota abaixo
 # sobre `pnpm prune --prod`).
 
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 # libc6-compat: node-gyp e alguns binários nativos (argon2, @prisma/engines)
 # esperam glibc; openssl: o query engine do Prisma depende de libssl.
 RUN apk add --no-cache libc6-compat openssl
