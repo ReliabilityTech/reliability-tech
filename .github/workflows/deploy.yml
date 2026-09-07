@@ -76,9 +76,20 @@ jobs:
           # apps/web/Dockerfile) — precisa ser a variável do AMBIENTE
           # escolhido (staging e produção apontam pra APIs diferentes), por
           # isso este job carrega `environment:` acima, não só os de deploy.
+          # NEXT_PUBLIC_SENTRY_DSN e SENTRY_ORG/PROJECT são opcionais
+          # (roadmap 5.4) — sem configurar como variável do ambiente, o
+          # build segue normal com Sentry desligado. SENTRY_AUTH_TOKEN (tem
+          # permissão de escrita no Sentry) NÃO entra aqui — vai em
+          # `secrets:` abaixo, montado só durante o RUN que precisa dele
+          # (ver apps/web/Dockerfile), nunca gravado em camada de imagem.
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_NAME=Arbora
+            NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+            SENTRY_ORG=${{ vars.SENTRY_ORG }}
+            SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}
+          secrets: |
+            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

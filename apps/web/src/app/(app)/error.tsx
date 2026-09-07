@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -13,6 +14,12 @@ import { ApiRequestError } from '@/lib/api-client';
 export default function ErroApp({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
     console.error(error);
+    // Erro 4xx da API é esperado (validação, permissão) — não é falha da
+    // aplicação, não polui o monitoramento. Mesmo critério do
+    // AllExceptionsFilter no backend.
+    if (!(error instanceof ApiRequestError) || error.statusCode >= 500) {
+      Sentry.captureException(error);
+    }
   }, [error]);
 
   const mensagem =

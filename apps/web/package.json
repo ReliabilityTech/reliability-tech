@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@arbora/contracts": "workspace:*",
+    "@sentry/nextjs": "^10.73.0",
     "lucide-react": "^0.542.0",
     "next": "^15.5.0",
     "react": "^19.1.1",

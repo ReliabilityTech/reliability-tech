@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { type Request, type Response } from 'express';
 
 type NestErrorBody = {
@@ -41,12 +42,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const statusCode = isHttp ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const body = isHttp ? this.readBody(exception) : {};
 
-    // Detalhes de erros inesperados nunca vazam para o cliente: só o log os vê.
+    // Detalhes de erros inesperados nunca vazam para o cliente: só o log e o
+    // Sentry os veem. 4xx são erro de quem chamou (validação, permissão),
+    // não da aplicação — não polui o monitoramento de erro com eles.
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `${request.method} ${request.url} falhou`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+      Sentry.captureException(exception);
     }
 
     const payload: ApiError = {

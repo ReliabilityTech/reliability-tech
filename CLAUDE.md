@@ -81,7 +81,17 @@ parte — usando o `DATABASE_URL` que `fly postgres attach` já grava como secre
 credencial em lugar nenhum. `apps/api/fly.toml`/`fly.staging.toml` e `apps/web/fly.toml`/
 `fly.staging.toml` descrevem os 4 apps (API/web × staging/produção); `docs/deploy.md` tem o passo a
 passo de provisionamento — **não validado contra uma conta Fly real**, testar manualmente antes de
-confiar no pipeline. 5.4 a 5.6 (monitoramento, backup, renovação de dependências) seguem pendentes.
+confiar no pipeline.
+
+**Fase 5.4 (monitoramento) concluída**: `@sentry/nestjs` (`apps/api/src/instrument.ts`,
+importado antes de tudo em `main.ts`) e `@sentry/nextjs` (`apps/web/src/instrumentation.ts` +
+`sentry.{client,server,edge}.config.ts`) capturam erro em runtime, inativos sem
+`SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` — filtro de captura só reporta 5xx/erro inesperado, igual à
+disciplina já existente em `AllExceptionsFilter`/`error.tsx`. `SENTRY_AUTH_TOKEN` (permissão de
+escrita) nunca é `ARG`/`ENV` de imagem — entra via BuildKit secret mount
+(`apps/web/Dockerfile`), pra não vazar em `docker history`/cache do CI. Provisionamento e alerta
+de uptime sobre `/health` em `docs/deploy.md`/`docs/monitoring.md` — **não validado contra conta
+Sentry real**. 5.5 e 5.6 (backup, renovação de dependências) seguem pendentes.
 
 Antes de mexer no domínio, leia:
 

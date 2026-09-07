@@ -67,7 +67,44 @@ fly secrets set CORS_ORIGINS=https://reliability-tech-web-staging.fly.dev -a rel
 fly secrets set CORS_ORIGINS=https://reliability-tech-web.fly.dev -a reliability-tech-api
 ```
 
-## 5. Testar manualmente antes de confiar no pipeline
+## 5. Sentry — monitoramento de erros (opcional, Fase 5.4)
+
+Sem isso configurado, os dois apps sobem normalmente com Sentry desligado
+(`env.ts`/`lib/env.ts` tratam DSN ausente/vazio como "sem Sentry", ver
+comentário em `apps/api/src/instrument.ts` e `apps/web/src/instrumentation.ts`).
+Configurar é opcional, mas recomendado antes de confiar em produção sem
+visibilidade de erro nenhuma.
+
+```bash
+# sentry.io → criar organização (se não tiver) → criar projeto Node (API) e
+# um projeto Next.js (web). Cada projeto tem seu próprio DSN em
+# Settings → Projects → <projeto> → Client Keys (DSN).
+
+fly secrets set SENTRY_DSN=https://...@o0.ingest.sentry.io/... -a reliability-tech-api-staging
+fly secrets set SENTRY_DSN=https://...@o0.ingest.sentry.io/... -a reliability-tech-api
+```
+
+No GitHub, nos mesmos ambientes `staging`/`production` criados no passo 6:
+
+- **Variable** `NEXT_PUBLIC_SENTRY_DSN` — o DSN do projeto Next.js (é
+  inlinado no bundle do front, por isso variável pública, não secret — mesmo
+  raciocínio de `NEXT_PUBLIC_API_URL`).
+- **Variable** `SENTRY_ORG` e `SENTRY_PROJECT` — slugs do projeto Next.js
+  (usados só pra decidir se faz upload de sourcemap, não são segredo).
+- **Secret** `SENTRY_AUTH_TOKEN` — token com permissão de escrita
+  (Settings → Auth Tokens, escopo `project:releases`), usado só durante o
+  build pra subir sourcemap. Nunca vira `ARG`/`ENV` de imagem Docker —
+  `apps/web/Dockerfile` monta como BuildKit secret (`--mount=type=secret`),
+  que não persiste em camada nenhuma; sem esse secret o build segue normal,
+  só pula o upload de sourcemap.
+
+A API não precisa de `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` —
+`@sentry/nestjs` não faz upload de sourcemap neste projeto, só captura erro
+em runtime a partir do `SENTRY_DSN`.
+
+Ver [monitoring.md](monitoring.md) para o alerta de uptime sobre `/health`.
+
+## 6. Testar manualmente antes de confiar no pipeline
 
 ```bash
 docker build -f apps/api/Dockerfile -t reliability-tech-api-test .
@@ -79,7 +116,7 @@ Confirma em `fly logs -a reliability-tech-api-staging` que a migração
 reliability-tech-api-staging` mostra a máquina saudável antes de repetir pro
 web e pra produção.
 
-## 6. Ligar o pipeline automatizado (`.github/workflows/deploy.yml`)
+## 7. Ligar o pipeline automatizado (`.github/workflows/deploy.yml`)
 
 Um token por ambiente, escopado só àquela app (não à organização inteira):
 

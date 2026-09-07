@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
@@ -25,4 +26,16 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Sem SENTRY_AUTH_TOKEN o plugin pula o upload de sourcemap sem falhar o
+  // build — é assim que o build continua funcionando em dev/CI sem Sentry
+  // configurado (RNF opcional, roadmap 5.4).
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  // Este projeto roda no Fly.io (roadmap 5.3), não na Vercel.
+  automaticVercelMonitors: false,
+});

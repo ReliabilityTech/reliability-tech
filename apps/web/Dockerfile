@@ -1,6 +1,8 @@
-# Build a partir da raiz do monorepo:
+# Build a partir da raiz do monorepo (BuildKit precisa estar ligado — já é o
+# padrão do `docker build` recente e do docker/build-push-action no CI):
 #   docker build -f apps/web/Dockerfile -t arbora-web \
-#     --build-arg NEXT_PUBLIC_API_URL=https://api.exemplo.com/api/v1 .
+#     --build-arg NEXT_PUBLIC_API_URL=https://api.exemplo.com/api/v1 \
+#     --secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN .
 #
 # NEXT_PUBLIC_* é inlinado no bundle em build time, não lido em runtime —
 # por isso entra como ARG aqui, não como variável só do container final.
@@ -29,9 +31,26 @@ COPY --from=pruner /app/out/full/ .
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:3333/api/v1
 ARG NEXT_PUBLIC_APP_NAME=Arbora
+# Sem valor, o Sentry fica desligado (env.ts trata "" como ausente) — ARG
+# sem default aqui é proposital, ao contrário dos dois de cima, que precisam
+# de uma URL válida pra passar na validação de env.ts mesmo sem o Sentry
+# configurado.
+ARG NEXT_PUBLIC_SENTRY_DSN
+# Org/projeto do plugin de upload de sourcemap (next.config.ts) não são
+# segredo, só slug — ficam como ARG normal. SENTRY_AUTH_TOKEN é diferente:
+# tem permissão de escrita no Sentry, então NÃO pode ser ARG/ENV comum (fica
+# gravado na imagem/camada de cache pra sempre, `docker history` mostra).
+# Entra via `--mount=type=secret`, que só existe durante este RUN — nunca
+# persiste em lugar nenhum da imagem.
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
-RUN pnpm turbo run build --filter=@arbora/web
+ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
+ENV SENTRY_ORG=${SENTRY_ORG}
+ENV SENTRY_PROJECT=${SENTRY_PROJECT}
+RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+    pnpm turbo run build --filter=@arbora/web
 
 FROM base AS runner
 WORKDIR /app
