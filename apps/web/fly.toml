@@ -1,0 +1,31 @@
+# Ambiente de produção. Config de staging é fly.staging.toml. Ver
+# docs/deploy.md pro passo a passo de provisionamento.
+#
+# NEXT_PUBLIC_API_URL não entra aqui: é inlinado no bundle em build time
+# (ver apps/web/Dockerfile), não lido em runtime — quem define é o
+# --build-arg do job de build no GitHub Actions, não este arquivo.
+app = "reliability-tech-web"
+primary_region = "gru"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/login"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

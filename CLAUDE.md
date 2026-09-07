@@ -72,12 +72,16 @@ saíram do "só existe via seed" que a matriz de rastreabilidade apontou: `apps/
 a turma+disciplina continuam pendentes — ver `docs/requisitos/rastreabilidade.md`.
 
 **Fase 5.1 (Dockerfile de produção) concluída**: `apps/api/Dockerfile` e `apps/web/Dockerfile`,
-multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postgres real. Fase 5.2
-(pipeline de deploy) também: `.github/workflows/deploy.yml` builda/publica as imagens no GHCR e
-roda `prisma migrate deploy` contra o `DATABASE_URL` do ambiente escolhido — disparo manual de
-propósito, sem ambiente real ainda. 5.3 a 5.6 (staging/produção, monitoramento, backup, renovação
-de dependências) seguem pendentes — a maioria depende da decisão de hospedagem (roadmap 0.4, ainda
-em aberto).
+multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postgres real. Hospedagem
+(roadmap 0.4) decidida: Fly.io, região `gru` (São Paulo). Fase 5.2 (pipeline de deploy) e 5.3
+(ambientes com segredos gerenciados) saem juntas: `.github/workflows/deploy.yml` builda/publica as
+imagens no GHCR e roda `flyctl deploy` pro ambiente escolhido (disparo manual, `workflow_dispatch`);
+a migração roda via `release_command` do próprio `fly.toml` — mecanismo nativo do Fly, não um job à
+parte — usando o `DATABASE_URL` que `fly postgres attach` já grava como secret na app, sem duplicar
+credencial em lugar nenhum. `apps/api/fly.toml`/`fly.staging.toml` e `apps/web/fly.toml`/
+`fly.staging.toml` descrevem os 4 apps (API/web × staging/produção); `docs/deploy.md` tem o passo a
+passo de provisionamento — **não validado contra uma conta Fly real**, testar manualmente antes de
+confiar no pipeline. 5.4 a 5.6 (monitoramento, backup, renovação de dependências) seguem pendentes.
 
 Antes de mexer no domínio, leia:
 
@@ -96,4 +100,5 @@ inventar** — e registre a hipótese em um ADR se precisar seguir mesmo assim.
 
 ## Documentação
 
-`docs/arquitetura.md`, `docs/convencoes.md`, `docs/design-system.md`, `docs/adr/`.
+`docs/arquitetura.md`, `docs/convencoes.md`, `docs/design-system.md`, `docs/adr/`, `docs/deploy.md`
+(provisionamento Fly.io — staging e produção).

@@ -1,0 +1,40 @@
+# Ambiente de produção. Config de staging é fly.staging.toml (mesma forma,
+# app diferente, sem manter máquina sempre ligada). Ver docs/deploy.md pro
+# passo a passo de provisionamento — este arquivo sozinho não cria nada.
+app = "reliability-tech-api"
+primary_region = "gru"
+
+[build]
+
+[deploy]
+  # Roda numa máquina nova, já com a imagem nova, ANTES de trocar o tráfego
+  # pra ela — a migração sempre acontece antes do código novo atender
+  # requisição de verdade (mecanismo nativo do Fly, não um job à parte no
+  # GitHub Actions). DATABASE_URL não é declarado aqui: `fly postgres attach`
+  # já grava esse secret na app, o Fly injeta sozinho na máquina.
+  release_command = "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma"
+
+[env]
+  NODE_ENV = "production"
+  API_PREFIX = "api"
+  # CORS_ORIGINS/JWT_EXPIRES_IN/etc ficam no default de apps/api/src/config/env.ts
+  # até haver motivo pra sobrescrever. CORS_ORIGINS em especial precisa virar
+  # a URL real do app web (`fly secrets set` ou aqui, sem segredo nenhum).
+
+[http_service]
+  internal_port = 3333
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/v1/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

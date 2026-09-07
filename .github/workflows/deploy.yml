@@ -1,17 +1,22 @@
 name: Deploy
 
-# Disparo manual só, de propósito: ainda não existe staging/produção real
-# (roadmap 0.4 — hospedagem — segue em aberto). Builda e publica as imagens
-# de qualquer jeito (não depende de 0.4), mas o job `migrate` só roda de
-# verdade depois que o ambiente escolhido (Settings → Environments) tiver um
-# secret DATABASE_URL configurado — sem isso, ele falha esperando o secret,
-# não migra banco nenhum por engano. Trocar pra `push: {tags: ['v*']}` (ou
-# `branches: [main]`) quando a Fase 5.3 definir os ambientes de verdade.
+# Disparo manual só, de propósito: publica de verdade em staging/produção no
+# Fly.io (roadmap 5.3) — sem revisão automática de push, ninguém quer isso
+# disparando sozinho. Trocar pra `push: {tags: ['v*']}` quando o time achar
+# que dá pra confiar no automático.
+#
+# Pré-requisito (uma vez só, fora deste arquivo — ver docs/deploy.md):
+# - 2 apps Fly por serviço (reliability-tech-api[-staging],
+#   reliability-tech-web[-staging]) e 2 clusters de Postgres, com
+#   `fly postgres attach` feito em cada app de API.
+# - Um ambiente `staging` e um `production` em Settings → Environments,
+#   cada um com o secret FLY_API_TOKEN e a variável NEXT_PUBLIC_API_URL
+#   (a URL pública do app de API daquele ambiente).
 on:
   workflow_dispatch:
     inputs:
       ambiente:
-        description: 'Ambiente de destino (precisa existir em Settings → Environments com o secret DATABASE_URL)'
+        description: 'Ambiente de destino (precisa existir em Settings → Environments com FLY_API_TOKEN)'
         required: true
         type: choice
         options: [staging, production]
@@ -29,6 +34,7 @@ jobs:
     name: Build e publica as imagens (GHCR)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: ${{ inputs.ambiente }}
     outputs:
       api-image: ${{ steps.tags.outputs.api }}
       web-image: ${{ steps.tags.outputs.web }}
@@ -67,51 +73,51 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.web }}
           # NEXT_PUBLIC_* é inlinado no bundle em build time (ver
-          # apps/web/Dockerfile) — sem essa var configurada em Settings →
-          # Environments → Variables, cai no default de dev (localhost).
+          # apps/web/Dockerfile) — precisa ser a variável do AMBIENTE
+          # escolhido (staging e produção apontam pra APIs diferentes), por
+          # isso este job carrega `environment:` acima, não só os de deploy.
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_NAME=Arbora
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  migrate:
-    name: Roda as migrações (prisma migrate deploy)
+  deploy:
+    name: Deploy no Fly.io
     needs: build-and-push
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: ${{ inputs.ambiente }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: prisma migrate deploy
-        run: pnpm db:deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-  deploy:
-    name: Publica a nova versão
-    needs: [build-and-push, migrate]
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.ambiente }}
-    steps:
-      # Placeholder até a Fase 0.4 decidir onde hospedar — build, push e
-      # migração já rodam de verdade acima; falta só apontar pro alvo real
-      # (ex.: um `docker compose pull && up` remoto via SSH, um `az/aws/fly
-      # deploy`, um rollout de Kubernetes). Ver docs/roadmap.md Fase 5.3.
-      - name: Resumo (deploy real ainda não configurado)
+      - name: Resolver os fly.toml do ambiente
+        id: config
         run: |
-          echo "Imagens publicadas em ghcr.io:"
-          echo "  API: ${{ needs.build-and-push.outputs.api-image }}"
-          echo "  Web: ${{ needs.build-and-push.outputs.web-image }}"
-          echo "Migração do banco (${{ inputs.ambiente }}) concluída."
-          echo "Nenhum alvo de deploy configurado ainda — depende da Fase 0.4/5.3."
+          if [ "${{ inputs.ambiente }}" = "staging" ]; then
+            echo "api=apps/api/fly.staging.toml" >> "$GITHUB_OUTPUT"
+            echo "web=apps/web/fly.staging.toml" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=apps/api/fly.toml" >> "$GITHUB_OUTPUT"
+            echo "web=apps/web/fly.toml" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy — API (release_command roda a migração antes do tráfego trocar)
+        run: |
+          flyctl deploy \
+            --config ${{ steps.config.outputs.api }} \
+            --image ${{ needs.build-and-push.outputs.api-image }} \
+            --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Deploy — web
+        run: |
+          flyctl deploy \
+            --config ${{ steps.config.outputs.web }} \
+            --image ${{ needs.build-and-push.outputs.web-image }} \
+            --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
