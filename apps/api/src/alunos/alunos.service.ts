@@ -1,5 +1,16 @@
-import { type AlunoListItem, type AlunoPerfil, type AlunoPerfilEvento } from '@arbora/contracts';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  type AlunoListItem,
+  type AlunoPerfil,
+  type AlunoPerfilEvento,
+  type CriarAlunoRequest,
+} from '@arbora/contracts';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -36,6 +47,37 @@ export class AlunosService {
       frequencia: frequenciaPorAluno.get(aluno.id) ?? null,
       status: aluno.status,
     }));
+  }
+
+  async criar(tenantId: string, dados: CriarAlunoRequest): Promise<{ id: string }> {
+    if (dados.turmaId) {
+      // Sem isso, um turmaId de outro tenant estouraria como violação crua de
+      // FK do Postgres em vez de uma mensagem clara — e um teste de
+      // integração (não um unitário com Prisma mockado) é o que pegaria essa
+      // omissão de verdade.
+      const turma = await this.prisma.turma.findFirst({
+        where: { id: dados.turmaId, tenantId },
+      });
+      if (!turma) throw new BadRequestException('Turma não encontrada nesta instituição');
+    }
+
+    try {
+      const aluno = await this.prisma.aluno.create({
+        data: {
+          tenantId,
+          nome: dados.nome,
+          dataNascimento: new Date(dados.dataNascimento),
+          matricula: dados.matricula,
+          turmaId: dados.turmaId ?? null,
+        },
+      });
+      return { id: aluno.id };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Já existe um aluno com essa matrícula');
+      }
+      throw error;
+    }
   }
 
   async perfil(tenantId: string, alunoId: string): Promise<AlunoPerfil> {

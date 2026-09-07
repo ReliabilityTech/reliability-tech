@@ -60,3 +60,17 @@ test('publica um comunicado válido para toda a instituição', async ({ page })
   await expect(page.getByText('Aviso E2E')).toBeVisible();
   await expect(cardPublicados.locator('p').last()).toHaveText(String(antes + 1));
 });
+
+test('cadastra um aluno sem turma', async ({ page }) => {
+  await page.goto('/alunos');
+  await page.getByRole('button', { name: 'Cadastrar aluno' }).click();
+
+  const dialog = page.locator('dialog');
+  await dialog.getByLabel('Nome').fill('Aluno E2E');
+  await dialog.getByLabel('Data de nascimento').fill('2016-05-10');
+  await dialog.getByLabel('Matrícula').fill('e2e-0001');
+  await dialog.getByRole('button', { name: 'Cadastrar' }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Aluno E2E' })).toBeVisible();
+});

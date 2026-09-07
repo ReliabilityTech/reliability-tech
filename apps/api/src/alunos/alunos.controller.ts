@@ -1,10 +1,17 @@
-import { type AlunoListItem, type AlunoPerfil } from '@arbora/contracts';
-import { Controller, Get, Param } from '@nestjs/common';
+import {
+  type AlunoListItem,
+  type AlunoPerfil,
+  type CriarAlunoRequest,
+  criarAlunoRequestSchema,
+} from '@arbora/contracts';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { type AccessTokenPayload } from '../auth/types/access-token-payload';
+import { Audit } from '../common/audit/audit.decorator';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { requireTenantId } from '../common/tenant.util';
 import { AlunosService } from './alunos.service';
 
@@ -18,6 +25,18 @@ export class AlunosController {
   @ApiOperation({ summary: 'Lista os alunos da instituição (RF-009)' })
   listar(@CurrentUser() user: AccessTokenPayload): Promise<AlunoListItem[]> {
     return this.alunosService.listar(requireTenantId(user));
+  }
+
+  @Roles('ADMIN_ESCOLAR', 'COORDENACAO')
+  @Audit('ALUNO_CRIADO', 'Aluno')
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cadastra um aluno (RF-009)' })
+  criar(
+    @CurrentUser() user: AccessTokenPayload,
+    @Body(new ZodValidationPipe(criarAlunoRequestSchema)) body: CriarAlunoRequest,
+  ): Promise<{ id: string }> {
+    return this.alunosService.criar(requireTenantId(user), body);
   }
 
   @Roles('ADMIN_ESCOLAR', 'COORDENACAO', 'PROFESSOR')

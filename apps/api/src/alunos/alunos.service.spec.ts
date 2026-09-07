@@ -1,5 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AlunosService } from './alunos.service';
@@ -7,10 +8,11 @@ import { AlunosService } from './alunos.service';
 describe('AlunosService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
     const prisma = {
-      aluno: { findMany: jest.fn(), findFirst: jest.fn() },
+      aluno: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn() },
       presenca: { findMany: jest.fn().mockResolvedValue([]) },
       nota: { aggregate: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
       movimentacao: { findMany: jest.fn().mockResolvedValue([]) },
+      turma: { findFirst: jest.fn() },
       ...prismaOverrides,
     };
 
@@ -131,6 +133,60 @@ describe('AlunosService', () => {
       expect(perfil.eventosRecentes).toHaveLength(2);
       expect(perfil.eventosRecentes[0]?.descricao).toBe('Entrada registrada');
       expect(perfil.eventosRecentes[1]?.descricao).toBe('Nota lançada em Matemática');
+    });
+  });
+
+  describe('criar', () => {
+    const dados = {
+      nome: 'Nova Aluna',
+      dataNascimento: '2016-05-10T00:00:00.000Z',
+      matricula: '2026-0099',
+    };
+
+    it('cria o aluno sem turma quando turmaId não é informado', async () => {
+      const { service, prisma } = await criarServico({
+        aluno: { create: jest.fn().mockResolvedValue({ id: 'aluno-novo' }) },
+      });
+
+      const resultado = await service.criar('tenant-1', dados);
+
+      expect(resultado).toEqual({ id: 'aluno-novo' });
+      expect(prisma.aluno.create).toHaveBeenCalledWith({
+        data: {
+          tenantId: 'tenant-1',
+          nome: dados.nome,
+          dataNascimento: new Date(dados.dataNascimento),
+          matricula: dados.matricula,
+          turmaId: null,
+        },
+      });
+    });
+
+    it('rejeita turmaId de outro tenant com BadRequestException', async () => {
+      const { service, prisma } = await criarServico({
+        turma: { findFirst: jest.fn().mockResolvedValue(null) },
+      });
+
+      await expect(
+        service.criar('tenant-1', { ...dados, turmaId: 'turma-de-outro-tenant' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.turma.findFirst).toHaveBeenCalledWith({
+        where: { id: 'turma-de-outro-tenant', tenantId: 'tenant-1' },
+      });
+    });
+
+    it('rejeita matrícula duplicada com ConflictException', async () => {
+      const erroPrisma = new Prisma.PrismaClientKnownRequestError('matrícula já existe', {
+        code: 'P2002',
+        clientVersion: '6.14.0',
+      });
+      const { service } = await criarServico({
+        aluno: { create: jest.fn().mockRejectedValue(erroPrisma) },
+      });
+
+      await expect(service.criar('tenant-1', dados)).rejects.toThrow(
+        'Já existe um aluno com essa matrícula',
+      );
     });
   });
 });

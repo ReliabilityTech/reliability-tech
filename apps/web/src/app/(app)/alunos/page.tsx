@@ -1,17 +1,19 @@
 import { type AlunoStatus } from '@arbora/contracts';
-import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 import { type BadgeTone, StatusBadge } from '@/components/status-badge';
 import { listarAlunos } from '@/lib/alunos';
 import { requireRole } from '@/lib/server-session';
+import { listarTurmas } from '@/lib/turmas';
+
+import { NovoAlunoDialog } from './novo-aluno-dialog';
 
 const STATUS_LABEL: Record<AlunoStatus, string> = { ATIVO: 'Ativo', INATIVO: 'Inativo' };
 const STATUS_TONE: Record<AlunoStatus, BadgeTone> = { ATIVO: 'success', INATIVO: 'neutral' };
 
 export default async function AlunosPage() {
   await requireRole(['ADMIN_ESCOLAR', 'COORDENACAO']);
-  const alunos = await listarAlunos();
+  const [alunos, turmas] = await Promise.all([listarAlunos(), listarTurmas()]);
 
   return (
     <div className="p-8">
@@ -22,14 +24,7 @@ export default async function AlunosPage() {
             Gerencie matrículas, dados acadêmicos e vínculos com responsáveis.
           </p>
         </div>
-        <button
-          type="button"
-          disabled
-          className="rounded-(--radius-card) flex items-center gap-2 bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          <UserPlus className="h-4 w-4" aria-hidden />
-          Cadastrar aluno
-        </button>
+        <NovoAlunoDialog turmas={turmas} />
       </header>
 
       {alunos.length === 0 ? (
