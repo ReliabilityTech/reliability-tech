@@ -1,9 +1,11 @@
 import {
   type AtualizarStatusTenantRequest,
   atualizarStatusTenantRequestSchema,
+  type CriarTenantRequest,
+  criarTenantRequestSchema,
   type TenantListItem,
 } from '@arbora/contracts';
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -21,6 +23,19 @@ export class TenantsController {
   @ApiOperation({ summary: 'Lista as instituições da plataforma (RF-008)' })
   listar(): Promise<TenantListItem[]> {
     return this.tenantsService.listar();
+  }
+
+  // Única rota de domínio que não passa por requireTenantId(user) — é o
+  // próprio ato de criar um tenant, então não existe tenantId prévio pra
+  // exigir. Precedente proposital, não um bug de roteamento (RF-007).
+  @Audit('TENANT_CRIADO', 'Tenant')
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Cadastra uma nova instituição (RF-007)' })
+  criar(
+    @Body(new ZodValidationPipe(criarTenantRequestSchema)) body: CriarTenantRequest,
+  ): Promise<{ id: string }> {
+    return this.tenantsService.criar(body);
   }
 
   @Audit('TENANT_STATUS_ALTERADO', 'Tenant')

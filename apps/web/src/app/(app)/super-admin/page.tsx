@@ -1,5 +1,5 @@
 import { type TenantStatus } from '@arbora/contracts';
-import { AlertOctagon, Building2, Plus, Users } from 'lucide-react';
+import { AlertOctagon, Building2, Users } from 'lucide-react';
 
 import { StatCard } from '@/components/stat-card';
 import { type BadgeTone, StatusBadge } from '@/components/status-badge';
@@ -7,6 +7,7 @@ import { buscarDashboardSuperAdmin } from '@/lib/dashboard';
 import { requireRole } from '@/lib/server-session';
 import { listarTenants } from '@/lib/tenants';
 
+import { NovaInstituicaoDialog } from './nova-instituicao-dialog';
 import { ToggleStatusButton } from './toggle-status-button';
 
 const STATUS_LABEL: Record<TenantStatus, string> = { ATIVO: 'Ativo', SUSPENSO: 'Suspenso' };
@@ -33,14 +34,7 @@ export default async function SuperAdminPage() {
             Visualize e gerencie todo o ecossistema da marca Arbora.
           </p>
         </div>
-        <button
-          type="button"
-          disabled
-          className="rounded-(--radius-card) flex items-center gap-2 bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Nova instituição
-        </button>
+        <NovaInstituicaoDialog />
       </header>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-3">

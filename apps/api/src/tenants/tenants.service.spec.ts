@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from './tenants.service';
@@ -6,7 +7,7 @@ import { TenantsService } from './tenants.service';
 describe('TenantsService', () => {
   const criarServico = async (prismaOverrides?: Record<string, unknown>) => {
     const prisma = {
-      tenant: { findMany: jest.fn(), update: jest.fn(), count: jest.fn() },
+      tenant: { findMany: jest.fn(), create: jest.fn(), update: jest.fn(), count: jest.fn() },
       aluno: { count: jest.fn() },
       ...prismaOverrides,
     };
@@ -17,6 +18,35 @@ describe('TenantsService', () => {
 
     return { service: moduleRef.get(TenantsService), prisma };
   };
+
+  describe('criar', () => {
+    const dados = { nome: 'Escola Nova', slug: 'escola-nova', plano: 'piloto' };
+
+    it('cria o tenant e devolve o id', async () => {
+      const { service, prisma } = await criarServico({
+        tenant: { create: jest.fn().mockResolvedValue({ id: 'tenant-novo' }) },
+      });
+
+      const resultado = await service.criar(dados);
+
+      expect(resultado).toEqual({ id: 'tenant-novo' });
+      expect(prisma.tenant.create).toHaveBeenCalledWith({ data: dados });
+    });
+
+    it('rejeita slug duplicado com ConflictException', async () => {
+      const erroPrisma = new Prisma.PrismaClientKnownRequestError('slug já existe', {
+        code: 'P2002',
+        clientVersion: '6.14.0',
+      });
+      const { service } = await criarServico({
+        tenant: { create: jest.fn().mockRejectedValue(erroPrisma) },
+      });
+
+      await expect(service.criar(dados)).rejects.toThrow(
+        'Já existe uma instituição com esse identificador (slug)',
+      );
+    });
+  });
 
   describe('atualizarStatus', () => {
     it('atualiza o status do tenant informado', async () => {

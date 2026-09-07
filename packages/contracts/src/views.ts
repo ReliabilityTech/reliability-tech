@@ -57,6 +57,52 @@ export const alunoPerfilSchema = z.object({
 });
 export type AlunoPerfil = z.infer<typeof alunoPerfilSchema>;
 
+export const criarAlunoRequestSchema = z.object({
+  nome: z.string().trim().min(2).max(160),
+  dataNascimento: isoDateTimeSchema,
+  matricula: z.string().trim().min(1).max(40),
+  turmaId: idSchema.optional(),
+});
+export type CriarAlunoRequest = z.infer<typeof criarAlunoRequestSchema>;
+
+// ---------------------------------------------------------------------------
+// Turmas, disciplinas e professores (RF-009)
+// ---------------------------------------------------------------------------
+
+export const turmaListItemSchema = z.object({
+  id: idSchema,
+  nome: z.string(),
+  serie: z.string(),
+  anoLetivo: z.number().int(),
+});
+export type TurmaListItem = z.infer<typeof turmaListItemSchema>;
+
+export const criarTurmaRequestSchema = z.object({
+  nome: z.string().trim().min(1).max(80),
+  serie: z.string().trim().min(1).max(80),
+  anoLetivo: z.number().int().min(2000),
+});
+export type CriarTurmaRequest = z.infer<typeof criarTurmaRequestSchema>;
+
+export const disciplinaListItemSchema = z.object({
+  id: idSchema,
+  nome: z.string(),
+});
+export type DisciplinaListItem = z.infer<typeof disciplinaListItemSchema>;
+
+export const criarDisciplinaRequestSchema = z.object({
+  nome: z.string().trim().min(1).max(120),
+});
+export type CriarDisciplinaRequest = z.infer<typeof criarDisciplinaRequestSchema>;
+
+export const professorListItemSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  email: z.string(),
+  createdAt: isoDateTimeSchema,
+});
+export type ProfessorListItem = z.infer<typeof professorListItemSchema>;
+
 // ---------------------------------------------------------------------------
 // Professor: turmas, notas, chamada (RF-010, RF-012)
 // ---------------------------------------------------------------------------
@@ -204,6 +250,23 @@ export const atualizarStatusTenantRequestSchema = z.object({
   status: tenantStatusSchema,
 });
 export type AtualizarStatusTenantRequest = z.infer<typeof atualizarStatusTenantRequestSchema>;
+
+export const criarTenantRequestSchema = z.object({
+  nome: z.string().trim().min(2).max(160),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, 'Use apenas letras minúsculas, números e hífen'),
+  plano: z.string().trim().min(1).max(40),
+  logoUrl: z.string().url().max(500).optional(),
+  corPrimaria: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Use um hexadecimal no formato #RRGGBB')
+    .optional(),
+});
+export type CriarTenantRequest = z.infer<typeof criarTenantRequestSchema>;
 
 // ---------------------------------------------------------------------------
 // Dashboards agregados
