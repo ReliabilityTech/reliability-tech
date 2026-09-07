@@ -23,8 +23,8 @@ Um RNF só é útil quando é **mensurável**. "O sistema deve ser rápido" não
 | ------ | --------- | --------------- | ------ |
 | RNF-001 | Conformidade com a LGPD, considerando dados sensíveis de menores de idade | Checklist de conformidade LGPD (bases legais, consentimento dos responsáveis, DPO) | Proposto |
 | RNF-002 | Criptografar dados sensíveis em trânsito (TLS/HTTPS) e em repouso | TLS obrigatório na borda (infra); criptografia de disco no banco gerenciado | Proposto |
-| RNF-003 | Controle de acesso baseado em papéis (RBAC), com isolamento rígido por tenant | Testes automatizados de isolamento entre tenants (um tenant nunca lê dado de outro) | Proposto — ver [ADR 0006](../adr/0006-estrategia-multi-tenancy.md) |
-| RNF-004 | Trilha de auditoria para ações críticas (acesso a dados, alterações de notas/faltas) | Toda mutação crítica gera entrada em `AuditLog` com autor, timestamp e valor anterior | Em desenvolvimento — modelo `AuditLog` já existe em `apps/api/prisma/schema.prisma`, gravação automática pendente (roadmap 2.5) |
+| RNF-003 | Controle de acesso baseado em papéis (RBAC), com isolamento rígido por tenant | Testes automatizados de isolamento entre tenants (um tenant nunca lê dado de outro) | Concluído — `AuthGuard`/`RolesGuard` globais + `requireTenantId()` em todo service, testado contra Postgres real em `apps/api/test/integration/tenant-isolation.integration-spec.ts`; RLS (2ª camada do [ADR 0006](../adr/0006-estrategia-multi-tenancy.md)) segue não configurada, dívida assumida — ver [rastreabilidade.md](rastreabilidade.md) |
+| RNF-004 | Trilha de auditoria para ações críticas (acesso a dados, alterações de notas/faltas) | Toda mutação crítica gera entrada em `AuditLog` com autor, timestamp e valor anterior | Em desenvolvimento — `@Audit()`/`AuditInterceptor` gravam automaticamente em 7 rotas (login/logout, nota, presença, recado, evento, status do tenant), mas não cobrem leitura nem capturam valor anterior, e o mecanismo em si não tem teste dedicado — ver [rastreabilidade.md](rastreabilidade.md) |
 | RNF-005 | Exclusão/anonimização de dados de um titular mediante solicitação (direito ao esquecimento) | Endpoint administrativo de anonimização + teste que confirma dado não é mais recuperável | Proposto |
 
 ### Desempenho e Escalabilidade
@@ -47,8 +47,8 @@ Um RNF só é útil quando é **mensurável**. "O sistema deve ser rápido" não
 
 | Código | Requisito | Como verificar | Status |
 | ------ | --------- | --------------- | ------ |
-| RNF-012 | Interface do responsável mobile-first | Revisão de design + teste em viewport mobile como padrão | Proposto (roadmap Fase 3) |
-| RNF-013 | Acessível conforme WCAG | Auditoria de acessibilidade (axe/Lighthouse) sem violações críticas | Em desenvolvimento — `eslint-plugin-jsx-a11y` e foco visível já no baseline, auditoria completa pendente |
+| RNF-012 | Interface do responsável mobile-first | Revisão de design + teste em viewport mobile como padrão | Em desenvolvimento — dashboard do responsável já implementado mobile-first (`responsavel-dashboard-client.tsx`, layout `max-w-sm`), sem teste de viewport automatizado |
+| RNF-013 | Acessível conforme WCAG | Auditoria de acessibilidade (axe/Lighthouse) sem violações críticas | Em desenvolvimento — auditoria manual completa feita na Fase 3.5 (contraste AA/AAA, `aria-label`, `role="alert"`, tema alto-contraste) além de `eslint-plugin-jsx-a11y`; falta automação em CI (axe/Lighthouse) |
 | RNF-014 | Navegação exigir no máximo poucos toques para notas, faltas e recados | Teste de usabilidade / contagem de cliques até a informação | Proposto |
 
 ### Compatibilidade
@@ -63,7 +63,7 @@ Um RNF só é útil quando é **mensurável**. "O sistema deve ser rápido" não
 | Código | Requisito | Como verificar | Status |
 | ------ | --------- | --------------- | ------ |
 | RNF-017 | Arquitetura modular, evolução independente dos módulos (acadêmico, comunicação, agenda) | Revisão de arquitetura | Concluído — monorepo com `apps/web`, `apps/api`, `packages/contracts` já modular (ADR 0001) |
-| RNF-018 | Testes automatizados cobrindo regras de negócio críticas (frequência, notas, isolamento entre tenants) | Cobertura mínima no CI (roadmap 4.3) | Em desenvolvimento — CI já exige lint/typecheck/test (`pnpm check`); regras de negócio ainda não existem (domínio não modelado) |
+| RNF-018 | Testes automatizados cobrindo regras de negócio críticas (frequência, notas, isolamento entre tenants) | Cobertura mínima no CI (roadmap 4.3) | Concluído — os três exemplos citados têm teste real (`alunos.service.spec.ts`/`dashboard.service.spec.ts`, `professor.service.spec.ts`, `tenant-isolation.integration-spec.ts`) e `pnpm check` roda com `coverageThreshold` mínimo (roadmap 4.3) |
 
 ### Notificações
 

@@ -58,8 +58,11 @@ Testcontainers) também: `apps/api/test/integration/` sobe um Postgres efêmero 
 migrações reais e testa isolamento entre tenants sem mockar o Prisma (`pnpm --filter @arbora/api
 test:integration`). Fase 4.3 (cobertura mínima no CI) também: `pnpm check`/CI agora rodam
 `pnpm test:coverage`, com piso de cobertura no jest da API e no vitest de contracts/web (web só em
-`src/lib/**`, já que `src/app`/`src/components` seguem sem infra de teste de unidade). 4.4 e 4.5
-(rastreabilidade e testes de componente) seguem pendentes.
+`src/lib/**`, já que `src/app`/`src/components` seguem sem infra de teste de unidade). Fase 4.4
+(rastreabilidade) também: `docs/requisitos/rastreabilidade.md` cruza cada RF/RNF com o código e
+teste reais — vários requisitos de comunicação/movimentação têm modelo no schema mas nenhum
+endpoint que o exponha, ver o documento antes de assumir que um RF está pronto. Fase 4.5 (testes
+de componente) segue pendente.
 
 Antes de mexer no domínio, leia:
 
