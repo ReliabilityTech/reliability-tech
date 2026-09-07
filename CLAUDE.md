@@ -51,18 +51,19 @@ AA/AAA auditado e corrigido por tema, todo campo com rótulo/`aria-label`, erros
 com `role="alert"`, e um seletor de tema claro/escuro/alto contraste (`ThemeToggle`,
 `data-theme` em `<html>`) — ver `docs/design-system.md#acessibilidade`.
 
-Fase 4.1 (Testes E2E com Playwright) também está concluída: `apps/web/e2e/` cobre login, as telas
-do admin, o lançamento de notas/chamada do professor e o painel do super-admin, autenticados via
-`storageState` por papel (`pnpm --filter @arbora/web test:e2e`). Fase 4.2 (Testes de integração com
-Testcontainers) também: `apps/api/test/integration/` sobe um Postgres efêmero de verdade, roda as
-migrações reais e testa isolamento entre tenants sem mockar o Prisma (`pnpm --filter @arbora/api
-test:integration`). Fase 4.3 (cobertura mínima no CI) também: `pnpm check`/CI agora rodam
-`pnpm test:coverage`, com piso de cobertura no jest da API e no vitest de contracts/web (web só em
-`src/lib/**`, já que `src/app`/`src/components` seguem sem infra de teste de unidade). Fase 4.4
-(rastreabilidade) também: `docs/requisitos/rastreabilidade.md` cruza cada RF/RNF com o código e
-teste reais — vários requisitos de comunicação/movimentação têm modelo no schema mas nenhum
-endpoint que o exponha, ver o documento antes de assumir que um RF está pronto. Fase 4.5 (testes
-de componente) segue pendente.
+**Fase 4 (Qualidade) completa**: `apps/web/e2e/` cobre login, as telas do admin, o lançamento de
+notas/chamada do professor e o painel do super-admin via Playwright, autenticados via
+`storageState` por papel (`pnpm --filter @arbora/web test:e2e`, 4.1). `apps/api/test/integration/`
+sobe um Postgres efêmero de verdade via Testcontainers, roda as migrações reais e testa isolamento
+entre tenants sem mockar o Prisma (`pnpm --filter @arbora/api test:integration`, 4.2). `pnpm
+check`/CI rodam `pnpm test:coverage`, com piso de cobertura no jest da API e no vitest de
+contracts/web — web mede `src/lib/**`, `src/components/**` e os arquivos
+`*-{client,dialog,form,list}.tsx`/`error.tsx` de `src/app` (4.3). `docs/requisitos/rastreabilidade.md`
+cruza cada RF/RNF com o código e teste reais — vários requisitos de comunicação/movimentação têm
+modelo no schema mas nenhum endpoint que o exponha, ver o documento antes de assumir que um RF
+está pronto (4.4). Componentes com lógica real (`ThemeToggle`, `error.tsx`, `NotasForm`,
+`NovoRecadoDialog`, `NovoEventoDialog`, `ChamadaList`) têm teste via Vitest + Testing Library,
+ambiente `jsdom` configurado em `apps/web/vitest.config.ts`/`vitest.setup.ts` (4.5).
 
 Antes de mexer no domínio, leia:
 
