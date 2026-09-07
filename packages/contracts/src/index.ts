@@ -9,3 +9,4 @@ export * from './health';
 export * from './movimentacao';
 export * from './notificacoes';
 export * from './tenant';
+export * from './views';

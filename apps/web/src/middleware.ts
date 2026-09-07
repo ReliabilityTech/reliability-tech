@@ -3,9 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 
 /**
- * Protege toda rota fora de `/login`. Consulta `/auth/me` na API a cada
- * navegação — mais simples e correto do que decodificar o JWT aqui, mas soma
- * uma chamada de rede por página. Revisar se a latência incomodar.
+ * Protege toda rota fora de `/login` e `/recuperar-senha`. Consulta `/auth/me`
+ * na API a cada navegação — mais simples e correto do que decodificar o JWT
+ * aqui, mas soma uma chamada de rede por página. Revisar se a latência
+ * incomodar.
  */
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/me`, {
@@ -19,5 +20,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!login|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!login|recuperar-senha|_next/static|_next/image|favicon.ico).*)'],
 };

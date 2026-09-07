@@ -1,5 +1,6 @@
 import { authSessionSchema, type User } from '@arbora/contracts';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 import { buildUrl } from './api-client';
 
@@ -22,4 +23,15 @@ export async function getServerUser(): Promise<User | null> {
 
   const parsed = authSessionSchema.safeParse(await response.json().catch(() => null));
   return parsed.success ? parsed.data.user : null;
+}
+
+/**
+ * Espelha o RolesGuard da API no front: página não listada em `roles` manda
+ * o usuário de volta para o próprio dashboard em vez de renderizar.
+ */
+export async function requireRole(roles: User['role'][]): Promise<User> {
+  const user = await getServerUser();
+  if (!user) redirect('/login');
+  if (!roles.includes(user.role)) redirect('/dashboard');
+  return user;
 }

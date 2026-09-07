@@ -29,6 +29,18 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((value) => value === 'true'),
+
+  /**
+   * Opcional: sem valor, monitoramento de erro fica desligado (RNF —
+   * roadmap 5.4). Só declarado aqui pra validação/documentação — quem lê de
+   * verdade é `instrument.ts`, direto de `process.env`, porque precisa
+   * rodar antes do ConfigModule existir (ver comentário lá). `preprocess`
+   * trata "" como ausente, mesmo raciocínio de NEXT_PUBLIC_SENTRY_DSN no web.
+   */
+  SENTRY_DSN: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

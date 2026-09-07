@@ -8,6 +8,7 @@ export type AuditEntry = {
   entity: string;
   entityId?: string;
   userId?: string;
+  tenantId?: string;
   ip?: string;
   metadata?: Prisma.InputJsonValue;
 };
@@ -31,6 +32,7 @@ export class AuditService {
           entity: entry.entity,
           entityId: entry.entityId,
           userId: entry.userId,
+          tenantId: entry.tenantId,
           ip: entry.ip,
           metadata: entry.metadata,
         },

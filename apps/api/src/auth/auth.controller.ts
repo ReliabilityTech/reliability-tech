@@ -38,10 +38,15 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autentica com e-mail e senha, abre sessão em cookies httpOnly' })
   async login(
-    @Body(new ZodValidationPipe(loginRequestSchema)) body: { email: string; password: string },
+    @Body(new ZodValidationPipe(loginRequestSchema))
+    body: { email: string; password: string; rememberMe: boolean },
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
-    const { tokens, user } = await this.authService.login(body.email, body.password);
+    const { tokens, user } = await this.authService.login(
+      body.email,
+      body.password,
+      body.rememberMe,
+    );
     this.setSessionCookies(res, tokens);
     return this.authService.toSession(user);
   }
@@ -67,8 +72,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoga o refresh token atual e limpa a sessão' })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_TOKEN_COOKIE];
-    const userId = raw ? await this.authService.logout(raw) : undefined;
-    if (userId) setAuditContext(req, { userId });
+    const revogado = raw ? await this.authService.logout(raw) : undefined;
+    if (revogado) {
+      setAuditContext(req, { userId: revogado.userId, tenantId: revogado.tenantId ?? undefined });
+    }
     this.clearSessionCookies(res);
   }
 
@@ -101,7 +108,9 @@ export class AuthController {
       secure,
       sameSite: 'lax',
       path: '/',
-      expires: tokens.refreshTokenExpiresAt,
+      // Sem "lembrar de mim": cookie de sessão, some ao fechar o navegador —
+      // mesmo que o RefreshToken no banco continue válido por mais tempo.
+      ...(tokens.rememberMe ? { expires: tokens.refreshTokenExpiresAt } : {}),
     });
   }
 

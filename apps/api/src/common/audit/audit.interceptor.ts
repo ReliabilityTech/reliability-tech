@@ -39,12 +39,18 @@ export class AuditInterceptor implements NestInterceptor {
           request.user?.sub ??
           getAuditContext(request)?.userId ??
           this.readResponseUserId(response);
+        const tenantId =
+          request.user?.tenantId ??
+          getAuditContext(request)?.tenantId ??
+          this.readResponseTenantId(response) ??
+          undefined;
 
         void this.auditService.record({
           action: metadata.action,
           entity: metadata.entity,
           entityId: this.resolveEntityId(request, response) ?? userId,
           userId,
+          tenantId,
           ip: request.ip,
         });
       }),
@@ -66,5 +72,13 @@ export class AuditInterceptor implements NestInterceptor {
     if (!user || typeof user !== 'object' || !('id' in user)) return undefined;
     const { id } = user as { id: unknown };
     return typeof id === 'string' ? id : undefined;
+  }
+
+  private readResponseTenantId(response: unknown): string | undefined {
+    if (!response || typeof response !== 'object' || !('user' in response)) return undefined;
+    const { user } = response as { user: unknown };
+    if (!user || typeof user !== 'object' || !('tenantId' in user)) return undefined;
+    const { tenantId } = user as { tenantId: unknown };
+    return typeof tenantId === 'string' ? tenantId : undefined;
   }
 }

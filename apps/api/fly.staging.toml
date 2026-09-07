@@ -1,0 +1,32 @@
+# Staging: mesma forma da produção (fly.toml), app e banco separados, e
+# `min_machines_running = 0` — desliga sozinho quando ninguém usa, mais barato
+# pra um ambiente que não precisa estar sempre no ar.
+app = "reliability-tech-api-staging"
+primary_region = "gru"
+
+[build]
+
+[deploy]
+  release_command = "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma"
+
+[env]
+  NODE_ENV = "production"
+  API_PREFIX = "api"
+
+[http_service]
+  internal_port = 3333
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/v1/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

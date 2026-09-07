@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 import { apiFetch } from './api-client';
 
-export function login(email: string, password: string): Promise<AuthSession> {
+export function login(email: string, password: string, rememberMe: boolean): Promise<AuthSession> {
   return apiFetch('auth/login', {
     method: 'POST',
     schema: authSessionSchema,
-    body: { email, password },
+    body: { email, password, rememberMe },
   });
 }
 

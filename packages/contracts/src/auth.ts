@@ -40,6 +40,8 @@ export type User = z.infer<typeof userSchema>;
 export const loginRequestSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Informe a senha'),
+  /** Refresh token vira cookie de sessão (some ao fechar o navegador) quando falso. */
+  rememberMe: z.boolean().default(false),
 });
 
 export type LoginRequest = z.infer<typeof loginRequestSchema>;

@@ -7,6 +7,18 @@ import { z } from 'zod';
 const clientEnvSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL deve ser uma URL válida'),
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default('Arbora'),
+  /**
+   * Opcional: sem valor, monitoramento de erro fica desligado (RNF —
+   * roadmap 5.4). Documentado aqui, mas quem lê de verdade são os
+   * sentry.*.config.ts direto de `process.env` — rodam antes desse módulo
+   * no ciclo de instrumentação do Next. `preprocess` trata "" como ausente:
+   * um ARG de Docker sem --build-arg vira string vazia, não undefined (ver
+   * apps/web/Dockerfile), e sem isso `.url()` rejeitaria a string vazia.
+   */
+  NEXT_PUBLIC_SENTRY_DSN: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
@@ -15,6 +27,7 @@ function loadEnv(): ClientEnv {
   const result = clientEnvSchema.safeParse({
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333/api/v1',
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   });
 
   if (!result.success) {
