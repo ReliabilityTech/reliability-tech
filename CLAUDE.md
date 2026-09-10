@@ -132,7 +132,17 @@ de migração. Contexto de tenant flui via `AsyncLocalStorage`
 (`this.prisma.db.<model>`, não `this.prisma.<model>` — ~15 arquivos, mecânico). Provado contra
 Postgres real: `apps/api/test/integration/row-level-security.integration-spec.ts`. Tabelas
 "filhas" sem `tenant_id` próprio e `users`/`audit_logs` ficam de fora desta rodada
-(`docs/roadmap.md`, dívida técnica). 6.3 (PWA+split) segue pendente, não iniciado.
+(`docs/roadmap.md`, dívida técnica).
+
+**Fase 6.3 (PWA) concluída, split de repositório pendente**: manifest
+(`apps/web/public/manifest.json`) e service worker (`apps/web/public/sw.js`, escrito à mão, sem
+`next-pwa`) só valem pro papel `RESPONSAVEL` — `(app)/layout.tsx`'s `generateMetadata()` só inclui
+o manifest, e `PwaRegistration` (`apps/web/src/components/pwa-registration.tsx`) só registra o
+worker, quando `role === 'RESPONSAVEL'`. Cache-first é só pra `/_next/static/*`; página, API e RSC
+payload são sempre rede — evita servir dado velho ou de outro tenant a partir do cache, por
+construção. `public/offline.html` é o fallback de navegação offline. Split do monorepo em
+repositórios (front com painel+PWA, back à parte) segue pendente — `@arbora/contracts` precisa de
+plano de publicação/versionamento antes disso.
 
 Antes de mexer no domínio, leia:
 

@@ -55,7 +55,7 @@ Um RNF só é útil quando é **mensurável**. "O sistema deve ser rápido" não
 
 | Código | Requisito | Como verificar | Status |
 | ------ | --------- | --------------- | ------ |
-| RNF-015 | Funcionar em navegadores modernos (Chrome, Safari, Firefox, Edge); PWA instalável se aplicável | Matriz de testes cross-browser + Lighthouse PWA audit | Proposto |
+| RNF-015 | Funcionar em navegadores modernos (Chrome, Safari, Firefox, Edge); PWA instalável se aplicável | Matriz de testes cross-browser + Lighthouse PWA audit | Parcial — PWA instalável pro papel `RESPONSAVEL` (roadmap 6.3): manifest + service worker com cache só de asset estático, sem fila de mutação offline. Matriz cross-browser e Lighthouse não rodados. |
 | RNF-016 | Responsivo em mobile, tablet e desktop | Teste visual em breakpoints definidos no design system | Proposto |
 
 ### Manutenibilidade

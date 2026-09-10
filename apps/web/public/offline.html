@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sem conexão — Arbora</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #f4faf6;
+        color: #1f2933;
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 22rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+      .icone {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #eaf5ef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+        color: #51636c;
+        line-height: 1.55;
+      }
+      button {
+        margin-top: 4px;
+        font: inherit;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #fff;
+        background: #26734d;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0f1c16;
+          color: #eaf5ef;
+        }
+        p {
+          color: #a9c4b5;
+        }
+        .icone {
+          background: #1d3428;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="icone" aria-hidden="true">
+        <svg
+          width="30"
+          height="30"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#26734d"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M1 1l22 22" />
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9" />
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" />
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+          <path d="M12 20h.01" />
+        </svg>
+      </div>
+      <h1>Sem conexão</h1>
+      <p>Os dados da escola exigem internet. Verifique sua conexão e tente de novo.</p>
+      <button type="button" onclick="location.reload()">Tentar novamente</button>
+    </main>
+  </body>
+</html>
