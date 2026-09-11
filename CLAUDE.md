@@ -140,7 +140,13 @@ Postgres real: `apps/api/test/integration/row-level-security.integration-spec.ts
 o manifest, e `PwaRegistration` (`apps/web/src/components/pwa-registration.tsx`) só registra o
 worker, quando `role === 'RESPONSAVEL'`. Cache-first é só pra `/_next/static/*`; página, API e RSC
 payload são sempre rede — evita servir dado velho ou de outro tenant a partir do cache, por
-construção. `public/offline.html` é o fallback de navegação offline. Split do monorepo em
+construção. `public/offline.html` é o fallback de navegação offline. Verificação manual (`pnpm dev`
+contra Postgres local) achou um bug real da Fase 6.2: a migração de RLS nunca deu `GRANT USAGE ON
+SCHEMA public` pro papel `arbora_app`, só DML nas tabelas — toda query falhava com "permission
+denied for schema public" antes de qualquer política RLS entrar em jogo (passou batido nos testes
+de integração porque o Postgres efêmero do Testcontainers concede `USAGE` em `public` pra `PUBLIC`
+por padrão; o Postgres local não). Corrigido em migração separada
+(`20260910042010_grant_schema_usage_arbora_app`), não editando a já aplicada. Split do monorepo em
 repositórios (front com painel+PWA, back à parte) segue pendente — `@arbora/contracts` precisa de
 plano de publicação/versionamento antes disso.
 
