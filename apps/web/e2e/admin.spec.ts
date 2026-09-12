@@ -116,7 +116,12 @@ test('atribui um professor a uma turma+disciplina, e ele vê a turma ao logar (R
   const senha = 'SenhaForte123';
   await page.goto('/professores');
   await page.getByRole('button', { name: 'Novo professor' }).click();
-  dialog = page.locator('dialog');
+  // `dialog[open]`, não `dialog`: /professores também renderiza um <dialog>
+  // fechado de "Atribuir turma" por linha (ver AtribuirTurmaDialog), então o
+  // seletor puro por tag vira ambíguo (2+ elementos) assim que há mais de um
+  // professor na tabela — o de "Cadastrar professor" precisa ser o único
+  // *aberto* no momento.
+  dialog = page.locator('dialog[open]');
   await dialog.getByLabel('Nome').fill('Professor E2E');
   await dialog.getByLabel('E-mail').fill(email);
   await dialog.getByLabel('Senha inicial').fill(senha);
@@ -125,7 +130,7 @@ test('atribui um professor a uma turma+disciplina, e ele vê a turma ao logar (R
 
   const linhaProfessor = page.locator('tr', { hasText: 'Professor E2E' });
   await linhaProfessor.getByRole('button', { name: 'Atribuir turma' }).click();
-  dialog = page.locator('dialog');
+  dialog = page.locator('dialog[open]');
   await dialog.getByLabel('Turma').selectOption({ label: 'Turma E2E' });
   await dialog.getByLabel('Disciplina').selectOption({ label: 'Disciplina E2E' });
   await dialog.getByRole('button', { name: 'Atribuir' }).click();

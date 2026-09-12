@@ -118,9 +118,18 @@ começar sem pedido explícito). **Fase 6.1 está completa**: vínculo responsá
 ambos com acesso"). Atribuição professor↔turma+disciplina — `apps/api/src/turma-disciplinas/`
 (`POST /turma-disciplinas`, upsert por `[turmaId, disciplinaId]`), `usuarios.service.ts` ganha
 `turmasAtribuidas`. Unitário/integração(Postgres real)/componente verificados verdes; o caso E2E
-existe em `apps/web/e2e/admin.spec.ts` mas **não foi verificado rodando** nesta sessão — máquina
-com CPU a 90%+/RAM livre baixa no momento, todas as falhas foram timeout de compilação/navegação,
-nunca uma asserção quebrada.
+existe em `apps/web/e2e/admin.spec.ts` — na sessão original ficou sem rodar, instabilidade atribuída
+à máquina (CPU 90%+/RAM baixa). Em 2026-09-11, rodado com a máquina livre: esse diagnóstico estava
+errado. Três bugs reais corrigidos — `apps/web/src/middleware.ts` chamava `/auth/me` também em
+requisição de *prefetch* do `<Link>` (cada link da barra lateral disparava a checagem só de
+aparecer na tela, estourando o rate limit da API sob o ritmo de uma suíte E2E; corrigido pulando a
+checagem quando `next-router-prefetch === '1'`, seguro porque `getServerUser()`/`requireRole()` no
+Server Component garante o acesso de qualquer forma); `apps/web/e2e/global-setup.ts` não limpava
+`alunos`/`turmas`/`users`/`tenants` entre execuções, então registro de teste com chave fixa
+(matrícula, e-mail, slug) sobrevivia e quebrava a run seguinte com 409 de duplicidade (corrigido
+pra `TRUNCATE tenants, users ... CASCADE`); um seletor Playwright ambíguo em `admin.spec.ts`
+(`dialog` → `dialog[open]`, já que `/professores` tem um `<dialog>` fechado por linha da tabela).
+Suíte completa 18/18 verde, rodada duas vezes seguidas pra confirmar.
 
 **Fase 6.2 (RLS) concluída**: políticas RLS nas 8 tabelas com `tenant_id` obrigatório e direto
 (`turmas`, `disciplinas`, `periodos_letivos`, `alunos`, `recados`, `conversas`, `eventos`,
