@@ -26,7 +26,7 @@
   "devDependencies": {
     "@arbora/eslint-config": "workspace:*",
     "@arbora/tsconfig": "workspace:*",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
