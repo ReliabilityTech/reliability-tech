@@ -26,11 +26,11 @@
   "devDependencies": {
     "@arbora/eslint-config": "workspace:*",
     "@arbora/tsconfig": "workspace:*",
-    "@playwright/test": "^1.63.0",
-    "@tailwindcss/postcss": "^4.1.12",
+    "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.7",
+    "@testing-library/user-event": "^14.6.8",
     "@types/node": "^22.18.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
@@ -38,7 +38,7 @@
     "@vitest/coverage-v8": "^3.2.7",
     "eslint": "^9.34.0",
     "jsdom": "^25.0.1",
-    "tailwindcss": "^4.1.12",
+    "tailwindcss": "^4.3.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
