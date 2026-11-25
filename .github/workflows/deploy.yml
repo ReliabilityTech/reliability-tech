@@ -90,6 +90,13 @@ jobs:
       # então corrija e rode o workflow de novo (migrate deploy é idempotente).
       - name: Migrar o banco (prisma migrate deploy)
         run: |
+          # Em staging a machine tem auto-stop (min_machines_running = 0) e pode
+          # já ter parado ociosa depois do deploy ("app has no started VMs"):
+          # um GET no /health acorda e, de quebra, confirma que a API sobe.
+          app="$(sed -n 's/^app = "\(.*\)"/\1/p' ${{ steps.config.outputs.api }})"
+          curl -fsS --retry 10 --retry-delay 5 --retry-all-errors \
+            "https://${app}.fly.dev/api/v1/health"
+          echo
           flyctl ssh console \
             --config ${{ steps.config.outputs.api }} \
             -C "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"
