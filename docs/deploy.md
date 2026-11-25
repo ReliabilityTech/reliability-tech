@@ -168,5 +168,5 @@ cada um:
   Precisa ser variável (não secret): é inlinada no bundle do front em build
   time, não lida em runtime — ver comentário em `apps/web/Dockerfile`.
 
-Com isso configurado, **Actions → Deploy → Run workflow** builda, publica no
-GHCR e faz o `flyctl deploy` dos dois apps do ambiente escolhido.
+Com isso configurado, **Actions → Deploy → Run workflow** faz o `flyctl deploy
+--remote-only` dos dois apps do ambiente escolhido (o build roda no builder do Fly, sem GHCR).
