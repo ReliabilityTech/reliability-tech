@@ -12,7 +12,7 @@
 # então "" quebra a validação (.url(), .min(1)) em vez de usar o fallback.
 # Sem --build-arg, sobe com esse default (não serve pra produção).
 
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 RUN apk add --no-cache libc6-compat
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
