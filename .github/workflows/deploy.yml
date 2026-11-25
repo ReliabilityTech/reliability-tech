@@ -5,13 +5,18 @@ name: Deploy
 # disparando sozinho. Trocar pra `push: {tags: ['v*']}` quando o time achar
 # que dá pra confiar no automático.
 #
+# O build das imagens roda no builder remoto do próprio Fly (`flyctl deploy
+# --remote-only`), não no GHCR: o Fly não consegue puxar imagem de um pacote
+# privado do GHCR ("Authentication required"), e tornar o pacote público só pra
+# isso expõe a imagem sem necessidade.
+#
 # Pré-requisito (uma vez só, fora deste arquivo — ver docs/deploy.md):
 # - 2 apps Fly por serviço (reliability-tech-api[-staging],
 #   reliability-tech-web[-staging]) e 2 clusters de Postgres, com
 #   `fly postgres attach` feito em cada app de API.
 # - Um ambiente `staging` e um `production` em Settings → Environments,
-#   cada um com o secret FLY_API_TOKEN e a variável NEXT_PUBLIC_API_URL
-#   (a URL pública do app de API daquele ambiente).
+#   cada um com o secret FLY_API_TOKEN. O web fala com a API pelo próprio host
+#   (proxy do Next, `NEXT_PUBLIC_API_URL=/api/v1`) — não há variável de URL.
 on:
   workflow_dispatch:
     inputs:
@@ -27,82 +32,27 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  build-and-push:
-    name: Build e publica as imagens (GHCR)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: ${{ inputs.ambiente }}
-    outputs:
-      api-image: ${{ steps.tags.outputs.api }}
-      web-image: ${{ steps.tags.outputs.web }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Definir tags das imagens
-        id: tags
-        run: |
-          echo "api=ghcr.io/${{ github.repository }}-api:${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          echo "web=ghcr.io/${{ github.repository }}-web:${{ github.sha }}" >> "$GITHUB_OUTPUT"
-
-      - name: Build e push — API
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.api }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build e push — web
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.web }}
-          # NEXT_PUBLIC_* é inlinado no bundle em build time (ver
-          # apps/web/Dockerfile) — precisa ser a variável do AMBIENTE
-          # escolhido (staging e produção apontam pra APIs diferentes), por
-          # isso este job carrega `environment:` acima, não só os de deploy.
-          # NEXT_PUBLIC_SENTRY_DSN e SENTRY_ORG/PROJECT são opcionais
-          # (roadmap 5.4) — sem configurar como variável do ambiente, o
-          # build segue normal com Sentry desligado. SENTRY_AUTH_TOKEN (tem
-          # permissão de escrita no Sentry) NÃO entra aqui — vai em
-          # `secrets:` abaixo, montado só durante o RUN que precisa dele
-          # (ver apps/web/Dockerfile), nunca gravado em camada de imagem.
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_APP_NAME=Arbora
-            NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
-            SENTRY_ORG=${{ vars.SENTRY_ORG }}
-            SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}
-          secrets: |
-            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
   deploy:
     name: Deploy no Fly.io
-    needs: build-and-push
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     environment: ${{ inputs.ambiente }}
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # Falha cedo e com mensagem clara em vez de gastar minutos de build.
+      - name: Conferir configuração do ambiente
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Secret FLY_API_TOKEN vazio no environment '${{ inputs.ambiente }}'."
+            exit 1
+          fi
 
       - name: Resolver os fly.toml do ambiente
         id: config
@@ -115,20 +65,62 @@ jobs:
             echo "web=apps/web/fly.toml" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Deploy — API (release_command roda a migração antes do tráfego trocar)
+      # --ha=false: o plano do Fly usado aqui tem teto de 3 machines (Postgres +
+      # API + web); o padrão do flyctl (2 machines por app) estoura o limite.
+      - name: Deploy — API
         run: |
           flyctl deploy \
             --config ${{ steps.config.outputs.api }} \
-            --image ${{ needs.build-and-push.outputs.api-image }} \
-            --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+            --dockerfile apps/api/Dockerfile \
+            --remote-only \
+            --ha=false
 
-      - name: Deploy — web
+      # Migração depois do rollout, dentro da machine nova (mesma imagem, mesmo
+      # DATABASE_URL). Não usamos `release_command` do Fly porque ele exige uma
+      # machine extra e o plano tem teto de 3 — ver comentário em apps/api/fly.toml.
+      # Se falhar, o job falha: a API nova já está no ar contra o schema antigo,
+      # então corrija e rode o workflow de novo (migrate deploy é idempotente).
+      - name: Migrar o banco (prisma migrate deploy)
         run: |
-          flyctl deploy \
-            --config ${{ steps.config.outputs.web }} \
-            --image ${{ needs.build-and-push.outputs.web-image }} \
-            --remote-only
+          # Em staging a machine tem auto-stop (min_machines_running = 0) e pode
+          # já ter parado ociosa depois do deploy ("app has no started VMs"):
+          # um GET no /health acorda e, de quebra, confirma que a API sobe.
+          app="$(sed -n 's/^app = "\(.*\)"/\1/p' ${{ steps.config.outputs.api }})"
+          curl -fsS --retry 10 --retry-delay 5 --retry-all-errors \
+            "https://${app}.fly.dev/api/v1/health"
+          echo
+          flyctl ssh console \
+            --config ${{ steps.config.outputs.api }} \
+            -C "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"
+
+      # NEXT_PUBLIC_SENTRY_DSN e SENTRY_ORG/PROJECT são opcionais (roadmap 5.4):
+      # sem configurar como variável do ambiente, o build segue com Sentry
+      # desligado. SENTRY_AUTH_TOKEN (permissão de escrita no Sentry) vai como
+      # build secret, montado só durante o RUN que precisa dele (ver
+      # apps/web/Dockerfile) — nunca vira ARG/ENV nem camada de imagem.
+      # Navegador e API ficam em sites diferentes (`*.fly.dev`), e o cookie de
+      # sessão não cruza entre eles. Então o web recebe `NEXT_PUBLIC_API_URL=/api/v1`
+      # (chamadas no próprio host, repassadas pela API via rewrites do Next) e
+      # `API_ORIGIN` com a origem da API — derivada do nome do app no fly.toml,
+      # sem variável extra pra manter por ambiente.
+      - name: Deploy — web
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          api_app="$(sed -n 's/^app = "\(.*\)"/\1/p' ${{ steps.config.outputs.api }})"
+          args=(
+            --config "${{ steps.config.outputs.web }}"
+            --dockerfile apps/web/Dockerfile
+            --remote-only
+            --ha=false
+            --build-arg "NEXT_PUBLIC_API_URL=/api/v1"
+            --build-arg "API_ORIGIN=https://${api_app}.fly.dev"
+            --build-arg "NEXT_PUBLIC_APP_NAME=Arbora"
+            --build-arg "NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}"
+            --build-arg "SENTRY_ORG=${{ vars.SENTRY_ORG }}"
+            --build-arg "SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}"
+          )
+          if [ -n "$SENTRY_AUTH_TOKEN" ]; then
+            args+=(--build-secret "sentry_auth_token=$SENTRY_AUTH_TOKEN")
+          fi
+          flyctl deploy "${args[@]}"

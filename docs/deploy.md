@@ -46,7 +46,7 @@ mais abaixo), depois dos passos 3 e 4.
 
 `fly postgres attach` cria um usuário/banco dedicado e grava o secret
 `DATABASE_URL` direto na app de API — é esse mesmo secret que o
-`release_command` do `fly.toml` (a migração) e a API em produção usam, sem
+passo de migração do `deploy.yml` (`prisma migrate deploy` via `flyctl ssh console`) e a API em produção usam, sem
 precisar declarar credencial nenhuma em lugar nenhum do repo.
 
 ```bash
@@ -146,7 +146,7 @@ fly deploy --config apps/api/fly.staging.toml --local-only -i reliability-tech-a
 ```
 
 Confirma em `fly logs -a reliability-tech-api-staging` que a migração
-(`release_command`) rodou sem erro e que `fly status -a
+(rode `fly ssh console -a reliability-tech-api-staging -C "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"`) rodou sem erro e que `fly status -a
 reliability-tech-api-staging` mostra a máquina saudável antes de repetir pro
 web e pra produção.
 
@@ -163,10 +163,13 @@ No GitHub: **Settings → Environments**, crie `staging` e `production`. Em
 cada um:
 
 - **Secret** `FLY_API_TOKEN` — o token gerado acima para aquele ambiente.
-- **Variable** `NEXT_PUBLIC_API_URL` — a URL pública da API daquele
-  ambiente + `/api/v1` (ex.: `https://reliability-tech-api-staging.fly.dev/api/v1`).
-  Precisa ser variável (não secret): é inlinada no bundle do front em build
-  time, não lida em runtime — ver comentário em `apps/web/Dockerfile`.
 
-Com isso configurado, **Actions → Deploy → Run workflow** builda, publica no
-GHCR e faz o `flyctl deploy` dos dois apps do ambiente escolhido.
+Não há variável de URL da API: o web chama `/api/v1` no próprio host e o Next
+repassa à API (`rewrites` em `next.config.ts`, origem em `API_ORIGIN`, derivada
+do nome do app no `fly.toml` da API). Motivo: web e API em `*.fly.dev` são sites
+diferentes e o cookie de sessão (httpOnly, sem `Domain`) não cruza entre eles.
+Com domínio próprio (`app.x.com` + `api.x.com`) daria pra voltar a uma URL
+absoluta e `Domain=.x.com` no cookie.
+
+Com isso configurado, **Actions → Deploy → Run workflow** faz o `flyctl deploy
+--remote-only` dos dois apps do ambiente escolhido (o build roda no builder do Fly, sem GHCR).

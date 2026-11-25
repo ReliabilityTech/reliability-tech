@@ -5,7 +5,13 @@ import { z } from 'zod';
  * (`process.env.NEXT_PUBLIC_X`) para que o Next consiga inliná-las no bundle.
  */
 const clientEnvSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL deve ser uma URL válida'),
+  /** URL absoluta (dev) ou caminho começando com `/` (proxy do Next, ver api-base.ts). */
+  NEXT_PUBLIC_API_URL: z
+    .string()
+    .refine(
+      (value) => value.startsWith('/') || z.string().url().safeParse(value).success,
+      'NEXT_PUBLIC_API_URL deve ser uma URL válida ou um caminho iniciado por "/"',
+    ),
   NEXT_PUBLIC_APP_NAME: z.string().min(1).default('Arbora'),
   /**
    * Opcional: sem valor, monitoramento de erro fica desligado (RNF —

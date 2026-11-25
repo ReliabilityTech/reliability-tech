@@ -30,6 +30,11 @@ RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:3333/api/v1
+# Origem absoluta da API, só pro proxy do Next (rewrites em next.config.ts, em
+# build time) e pro servidor (middleware/Server Components, em runtime). Só
+# vale quando NEXT_PUBLIC_API_URL é relativa (ex.: /api/v1); sem ela, o front
+# fala direto com a URL absoluta de NEXT_PUBLIC_API_URL (dev local).
+ARG API_ORIGIN
 ARG NEXT_PUBLIC_APP_NAME=Arbora
 # Sem valor, o Sentry fica desligado (env.ts trata "" como ausente) — ARG
 # sem default aqui é proposital, ao contrário dos dois de cima, que precisam
@@ -45,16 +50,28 @@ ARG NEXT_PUBLIC_SENTRY_DSN
 ARG SENTRY_ORG
 ARG SENTRY_PROJECT
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV API_ORIGIN=${API_ORIGIN}
 ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
 ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
 ENV SENTRY_ORG=${SENTRY_ORG}
 ENV SENTRY_PROJECT=${SENTRY_PROJECT}
-RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+# Lê o arquivo do mount em vez de `env=` na flag: `env=` exige frontend
+# dockerfile >= 1.10, e o builder do `fly deploy` (Depot) falha com "unexpected
+# key 'env'". Sem o secret, o arquivo não existe e o build segue sem sourcemap.
+RUN --mount=type=secret,id=sentry_auth_token \
+    if [ -s /run/secrets/sentry_auth_token ]; then \
+      export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"; \
+    fi; \
     pnpm turbo run build --filter=@arbora/web
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# O servidor lê API_ORIGIN em runtime (middleware e Server Components chamam a
+# API direto, sem passar pelo proxy) — repete o ARG do installer, que não é
+# herdado entre estágios.
+ARG API_ORIGIN
+ENV API_ORIGIN=${API_ORIGIN}
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 # `output: 'standalone'` (next.config.ts) já traça e copia só os módulos de
