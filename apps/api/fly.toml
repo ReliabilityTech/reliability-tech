@@ -12,7 +12,9 @@ primary_region = "gru"
   # requisição de verdade (mecanismo nativo do Fly, não um job à parte no
   # GitHub Actions). DATABASE_URL não é declarado aqui: `fly postgres attach`
   # já grava esse secret na app, o Fly injeta sozinho na máquina.
-  release_command = "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma"
+  # Binário local do workspace: `npx prisma` não acha o pacote na raiz e baixa a
+  # última major (v8), que não tem `migrate deploy`.
+  release_command = "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"
 
 [env]
   NODE_ENV = "production"
