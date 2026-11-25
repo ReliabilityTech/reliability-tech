@@ -2,6 +2,7 @@ import { ERROR_CODES } from '@arbora/contracts';
 import { cookies } from 'next/headers';
 import { type z, type ZodTypeAny } from 'zod';
 
+import { getServerApiBase } from './api-base';
 import { ApiRequestError, buildUrl, type QueryParams, toApiError } from './api-client';
 
 export type ServerFetchOptions<TSchema extends ZodTypeAny> = {
@@ -26,7 +27,7 @@ export async function serverFetch<TSchema extends ZodTypeAny>(
     .map(({ name, value }) => `${name}=${value}`)
     .join('; ');
 
-  const response = await fetch(buildUrl(path, params), {
+  const response = await fetch(buildUrl(path, params, getServerApiBase()), {
     method,
     cache: 'no-store',
     headers: {

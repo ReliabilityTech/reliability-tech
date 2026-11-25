@@ -23,15 +23,20 @@ export type QueryParams = Record<string, string | number | boolean | undefined |
 /** Monta a URL final, descartando parâmetros vazios. */
 export function buildUrl(path: string, params?: QueryParams, baseUrl = env.NEXT_PUBLIC_API_URL) {
   const base = baseUrl.replace(/\/+$/, '');
-  const url = new URL(`${base}/${path.replace(/^\/+/, '')}`);
+  const target = `${base}/${path.replace(/^\/+/, '')}`;
 
+  // `new URL` rejeita caminho relativo (`/api/v1/...`, base via proxy do Next),
+  // então a query é montada à parte e a URL final só é normalizada se absoluta.
+  const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value !== undefined && value !== null && value !== '') {
-      url.searchParams.set(key, String(value));
+      query.set(key, String(value));
     }
   }
+  const search = query.toString();
+  const withQuery = search ? `${target}?${search}` : target;
 
-  return url.toString();
+  return target.startsWith('/') ? withQuery : new URL(withQuery).toString();
 }
 
 /**

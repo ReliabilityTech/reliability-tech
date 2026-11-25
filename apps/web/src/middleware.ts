@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { env } from '@/lib/env';
+import { getServerApiBase } from '@/lib/api-base';
 
 /**
  * Protege toda rota fora de `/login` e `/recuperar-senha`. Consulta `/auth/me`
@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.next();
   }
 
-  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/me`, {
+  const response = await fetch(`${getServerApiBase()}/auth/me`, {
     headers: { cookie: request.headers.get('cookie') ?? '' },
   });
   if (response.ok) return NextResponse.next();

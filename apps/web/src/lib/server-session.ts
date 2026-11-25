@@ -2,6 +2,7 @@ import { authSessionSchema, type User } from '@arbora/contracts';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { getServerApiBase } from './api-base';
 import { buildUrl } from './api-client';
 
 /**
@@ -15,7 +16,7 @@ export async function getServerUser(): Promise<User | null> {
     .map(({ name, value }) => `${name}=${value}`)
     .join('; ');
 
-  const response = await fetch(buildUrl('auth/me'), {
+  const response = await fetch(buildUrl('auth/me', undefined, getServerApiBase()), {
     headers: { cookie: cookieHeader },
     cache: 'no-store',
   });

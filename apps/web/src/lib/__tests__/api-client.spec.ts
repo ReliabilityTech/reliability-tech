@@ -26,6 +26,19 @@ describe('buildUrl', () => {
   });
 });
 
+describe('buildUrl com base relativa (proxy do Next)', () => {
+  it('mantém o caminho relativo, sem exigir origem', () => {
+    expect(buildUrl('/auth/me', undefined, '/api/v1')).toBe('/api/v1/auth/me');
+    expect(buildUrl('auth/me', undefined, '/api/v1/')).toBe('/api/v1/auth/me');
+  });
+
+  it('serializa a query em base relativa', () => {
+    expect(buildUrl('users', { q: 'a b&c', page: 2, vazio: '' }, '/api/v1')).toBe(
+      '/api/v1/users?q=a+b%26c&page=2',
+    );
+  });
+});
+
 describe('toApiError', () => {
   it('preserva um envelope de erro válido vindo da API', () => {
     const envelope = {
