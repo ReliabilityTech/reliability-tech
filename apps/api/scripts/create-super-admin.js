@@ -10,6 +10,9 @@
 //
 // JS puro e não TS de propósito: roda com o `node` da imagem de produção, que
 // não tem ts-node no PATH. Usa DATABASE_URL (papel dono, o mesmo da migração).
+// Script CLI em JS puro (CommonJS): require() e console.log são o esperado aqui,
+// diferente do código da API em src/.
+/* eslint-disable @typescript-eslint/no-require-imports, no-console */
 const { PrismaClient, UserRole } = require('@prisma/client');
 const argon2 = require('argon2');
 
