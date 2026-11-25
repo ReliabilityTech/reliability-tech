@@ -52,8 +52,11 @@ jobs:
       - name: Definir tags das imagens
         id: tags
         run: |
-          echo "api=ghcr.io/${{ github.repository }}-api:${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          echo "web=ghcr.io/${{ github.repository }}-web:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          # O Docker exige o nome do repositório de imagem em minúsculas, mas
+          # `github.repository` preserva a caixa do dono (ex.: "ReliabilityTech/...").
+          repo="$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')"
+          echo "api=ghcr.io/${repo}-api:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "web=ghcr.io/${repo}-web:${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Build e push — API
         uses: docker/build-push-action@v6
