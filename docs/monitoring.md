@@ -30,7 +30,7 @@ aparece no projeto Sentry correspondente.
 ## Alerta de uptime sobre `/health` (não implementado — decisão manual)
 
 Ambos os apps de API expõem `GET /api/v1/health` publicamente (sem autenticação, ver
-`apps/api/src/health/`) e é esse o endpoint que o `release_command`/healthcheck do Fly já usa
+`apps/api/src/health/`) e é esse o endpoint que o healthcheck do Fly já usa
 internamente (`fly.toml`). Um alerta de uptime externo é complementar: o healthcheck do Fly reinicia
 a máquina se ela cair, mas não avisa ninguém — para isso, escolha uma das opções abaixo.
 

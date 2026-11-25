@@ -6,10 +6,10 @@ primary_region = "gru"
 
 [build]
 
-[deploy]
-  # Binário local do workspace: `npx prisma` não acha o pacote na raiz e baixa a
-  # última major (v8), que não tem `migrate deploy`.
-  release_command = "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"
+# Sem `release_command`: ele sobe uma machine temporária só pra migração, e o
+# plano do Fly usado aqui tem teto de 3 machines (Postgres + API + web), então
+# todo deploy da API falhava com "reached its machine limit". A migração roda
+# via `flyctl ssh console` dentro da machine já deployada — ver deploy.yml.
 
 [env]
   NODE_ENV = "production"

@@ -46,7 +46,7 @@ mais abaixo), depois dos passos 3 e 4.
 
 `fly postgres attach` cria um usuário/banco dedicado e grava o secret
 `DATABASE_URL` direto na app de API — é esse mesmo secret que o
-`release_command` do `fly.toml` (a migração) e a API em produção usam, sem
+passo de migração do `deploy.yml` (`prisma migrate deploy` via `flyctl ssh console`) e a API em produção usam, sem
 precisar declarar credencial nenhuma em lugar nenhum do repo.
 
 ```bash
@@ -146,7 +146,7 @@ fly deploy --config apps/api/fly.staging.toml --local-only -i reliability-tech-a
 ```
 
 Confirma em `fly logs -a reliability-tech-api-staging` que a migração
-(`release_command`) rodou sem erro e que `fly status -a
+(rode `fly ssh console -a reliability-tech-api-staging -C "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"`) rodou sem erro e que `fly status -a
 reliability-tech-api-staging` mostra a máquina saudável antes de repetir pro
 web e pra produção.
 

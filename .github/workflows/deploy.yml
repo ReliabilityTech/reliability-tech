@@ -115,12 +115,25 @@ jobs:
             echo "web=apps/web/fly.toml" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Deploy — API (release_command roda a migração antes do tráfego trocar)
+      - name: Deploy — API
         run: |
           flyctl deploy \
             --config ${{ steps.config.outputs.api }} \
             --image ${{ needs.build-and-push.outputs.api-image }} \
             --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      # Migração depois do rollout, dentro da machine nova (mesma imagem, mesmo
+      # DATABASE_URL). Não usamos `release_command` do Fly porque ele exige uma
+      # machine extra e o plano tem teto de 3 — ver comentário em apps/api/fly.toml.
+      # Se falhar, o job falha: a API nova já está no ar contra o schema antigo,
+      # então corrija e rode o workflow de novo (migrate deploy é idempotente).
+      - name: Migrar o banco (prisma migrate deploy)
+        run: |
+          flyctl ssh console \
+            --config ${{ steps.config.outputs.api }} \
+            -C "apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 

@@ -76,8 +76,8 @@ multi-stage com `turbo prune --docker`, testados de ponta a ponta contra o Postg
 (roadmap 0.4) decidida: Fly.io, região `gru` (São Paulo). Fase 5.2 (pipeline de deploy) e 5.3
 (ambientes com segredos gerenciados) saem juntas: `.github/workflows/deploy.yml` builda/publica as
 imagens no GHCR e roda `flyctl deploy` pro ambiente escolhido (disparo manual, `workflow_dispatch`);
-a migração roda via `release_command` do próprio `fly.toml` — mecanismo nativo do Fly, não um job à
-parte — usando o `DATABASE_URL` que `fly postgres attach` já grava como secret na app, sem duplicar
+a migração roda no `deploy.yml` via `flyctl ssh console` na machine já deployada (não via
+`release_command`: ele exige uma machine extra e o plano tem teto de 3) — usando o `DATABASE_URL` que `fly postgres attach` já grava como secret na app, sem duplicar
 credencial em lugar nenhum. `apps/api/fly.toml`/`fly.staging.toml` e `apps/web/fly.toml`/
 `fly.staging.toml` descrevem os 4 apps (API/web × staging/produção); `docs/deploy.md` tem o passo a
 passo de provisionamento — **não validado contra uma conta Fly real**, testar manualmente antes de
