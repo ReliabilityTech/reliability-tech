@@ -49,7 +49,13 @@ ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
 ENV NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN}
 ENV SENTRY_ORG=${SENTRY_ORG}
 ENV SENTRY_PROJECT=${SENTRY_PROJECT}
-RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+# Lê o arquivo do mount em vez de `env=` na flag: `env=` exige frontend
+# dockerfile >= 1.10, e o builder do `fly deploy` (Depot) falha com "unexpected
+# key 'env'". Sem o secret, o arquivo não existe e o build segue sem sourcemap.
+RUN --mount=type=secret,id=sentry_auth_token \
+    if [ -s /run/secrets/sentry_auth_token ]; then \
+      export SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"; \
+    fi; \
     pnpm turbo run build --filter=@arbora/web
 
 FROM base AS runner
