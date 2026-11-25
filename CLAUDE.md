@@ -81,7 +81,7 @@ a migração roda no `deploy.yml` via `flyctl ssh console` na machine já deploy
 `release_command`: ele exige uma machine extra e o plano tem teto de 3) — usando o `DATABASE_URL` que `fly postgres attach` já grava como secret na app, sem duplicar
 credencial em lugar nenhum. `apps/api/fly.toml`/`fly.staging.toml` e `apps/web/fly.toml`/
 `fly.staging.toml` descrevem os 4 apps (API/web × staging/produção); `docs/deploy.md` tem o passo a
-passo de provisionamento — **não validado contra uma conta Fly real**, testar manualmente antes de
+passo de provisionamento — **staging validada contra conta Fly real (2026-11-25); produção não**, testar manualmente antes de
 confiar no pipeline.
 
 **Fase 5.4 (monitoramento) concluída**: `@sentry/nestjs` (`apps/api/src/instrument.ts`,

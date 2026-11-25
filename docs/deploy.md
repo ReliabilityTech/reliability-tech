@@ -1,11 +1,15 @@
 # Deploy — Fly.io
 
-> Este documento não foi validado contra uma conta Fly real (a sessão que
-> escreveu isso não tem credencial de Fly.io) — os comandos seguem a
-> documentação oficial do Fly, mas rode cada etapa manualmente e confirme
-> antes de confiar no pipeline automatizado (`.github/workflows/deploy.yml`).
+> **Staging validada contra uma conta Fly real em 2026-11-25** (Postgres, API e
+> web em `gru`, deploy pelo `deploy.yml`, login ponta a ponta). **Produção
+> ainda não** — os comandos de produção seguem a documentação oficial do Fly,
+> mas rode cada etapa manualmente e confirme antes de confiar no pipeline.
 > Se algum nome de app já estiver em uso (nomes são globais no Fly), troque
 > o campo `app` no `fly.toml` correspondente antes de continuar.
+>
+> Limite que condiciona o desenho: o plano usado tem teto de **3 machines** (Postgres +
+> API + web). Por isso não há `release_command` (ele sobe uma machine extra) e os
+> deploys usam `--ha=false`. Produção (3 apps novos) exige aumentar o limite.
 
 Cobre a Fase 5.3 do roadmap: dois ambientes (staging e produção), cada um com
 sua própria API, seu próprio web e seu próprio Postgres — isolados de
@@ -95,6 +99,24 @@ fly secrets set JWT_SECRET="$(openssl rand -base64 48)" -a reliability-tech-api
 # customizado se/quando existir um.
 fly secrets set CORS_ORIGINS=https://reliability-tech-web-staging.fly.dev -a reliability-tech-api-staging
 fly secrets set CORS_ORIGINS=https://reliability-tech-web.fly.dev -a reliability-tech-api
+```
+
+## IP do cliente e rate limit (`TRUST_PROXY_HOPS`)
+
+O rate limit da API é por IP (`req.ip`). Atrás do proxy do Fly, sem
+`TRUST_PROXY_HOPS` o Express usa o IP do vizinho direto da conexão, e como o web
+repassa as chamadas do navegador à API (proxy do Next), todo mundo pareceria um
+só cliente (limite de 120 req/min dividido entre todos os usuários).
+
+`TRUST_PROXY_HOPS=N` faz o Express ler o IP do cliente do `N`-ésimo item de
+`X-Forwarded-For`, contando da direita. **Contar a mais** deixa o cliente forjar
+o IP; **a menos** devolve o IP de um proxy. Como calibrar: faça uma requisição
+pelo navegador (ex.: um login), pegue o `x-forwarded-for` dela em
+`fly logs -a reliability-tech-api-staging --no-tail` e conte quantos itens há à
+direita do IP real do cliente (o Fly adiciona o seu próprio no fim). Depois:
+
+```bash
+fly secrets set TRUST_PROXY_HOPS=<N> -a reliability-tech-api-staging
 ```
 
 ## 6. Sentry — monitoramento de erros (opcional, Fase 5.4)

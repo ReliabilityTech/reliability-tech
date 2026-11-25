@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { type NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { type NextFunction, type Request, type Response } from 'express';
@@ -15,12 +16,15 @@ import { tenantContextStorage } from './common/tenant-context';
 import { type Env, parseCorsOrigins } from './config/env';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
 
   app.useLogger(app.get(Logger));
 
   const config = app.get(ConfigService<Env, true>);
   const prefix = config.get('API_PREFIX', { infer: true });
+
+  const trustProxyHops = config.get('TRUST_PROXY_HOPS', { infer: true });
+  if (trustProxyHops > 0) app.set('trust proxy', trustProxyHops);
 
   app.use(helmet());
   app.use(cookieParser());

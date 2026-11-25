@@ -34,6 +34,15 @@ export const envSchema = z.object({
   RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
 
+  /**
+   * Quantos proxies à frente da API são confiáveis pra ler o IP do cliente em
+   * `X-Forwarded-For` (Express `trust proxy`). 0 = não confia em nenhum: `req.ip`
+   * é o IP do vizinho direto da conexão. Atrás de proxy (Fly) sem isso, o rate
+   * limit por IP enxerga todos os clientes como o mesmo IP. Contar errado pra
+   * mais deixa o cliente forjar o IP (X-Forwarded-For) e escapar do limite.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+
   SWAGGER_ENABLED: z
     .enum(['true', 'false'])
     .default('true')
