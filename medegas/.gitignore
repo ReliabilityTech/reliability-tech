@@ -1,0 +1,5 @@
+# arquivos de trabalho do CalculiX (centenas de MB; regeráveis com scripts/fem_study.py)
+freecad/fem/_ccx/
+freecad/drawings/*.log
+*.FCBak
+__pycache__/

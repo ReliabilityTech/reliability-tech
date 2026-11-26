@@ -1,0 +1,197 @@
+[
+ {
+  "name": "A_LC1_central",
+  "arch": "A",
+  "desc": "Botijao centrado, anel completo",
+  "t": 3.0,
+  "W": 274.68,
+  "area_carga": 2893.406833955736,
+  "nos_carga": 1264,
+  "nos": 263210,
+  "elementos": 137925,
+  "uz_min": -0.225849,
+  "uz_min_xy": [
+   -1.248741227795025,
+   -189.9958963908063
+  ],
+  "vm_max": 25.45626181374044,
+  "uz_batentes": {
+   "45": 0.00272136,
+   "135": 0.00201016,
+   "225": 0.00231834,
+   "315": 0.00211097
+  },
+  "reacoes": {
+   "APOIO_SENSOR_1": 69.18741,
+   "APOIO_SENSOR_2": 68.1647,
+   "APOIO_SENSOR_3": 68.27732,
+   "APOIO_SENSOR_4": 69.05057
+  }
+ },
+ {
+  "name": "A_LC2_excentrico",
+  "arch": "A",
+  "desc": "Botijao deslocado 25 mm na direcao do sensor 1",
+  "t": 3.0,
+  "W": 274.68,
+  "area_carga": 2893.406833956163,
+  "nos_carga": 1298,
+  "nos": 110799,
+  "elementos": 55752,
+  "uz_min": -0.33083,
+  "uz_min_xy": [
+   -13.931661605882672,
+   172.2853990511396
+  ],
+  "vm_max": 30.490631375020754,
+  "uz_batentes": {
+   "45": -0.0220224,
+   "135": 0.00179736,
+   "225": 0.0116181,
+   "315": 0.00274
+  },
+  "reacoes": {
+   "APOIO_SENSOR_1": 73.5564,
+   "APOIO_SENSOR_2": 76.83869,
+   "APOIO_SENSOR_3": 45.72432,
+   "APOIO_SENSOR_4": 78.56059
+  }
+ },
+ {
+  "name": "A_LC3_arco90",
+  "arch": "A",
+  "desc": "Apoio parcial: arco de 90 graus entre dois sensores (anel amassado/inclinado)",
+  "t": 3.0,
+  "W": 274.68,
+  "area_carga": 723.35170848905,
+  "nos_carga": 319,
+  "nos": 212135,
+  "elementos": 107022,
+  "uz_min": -1.20626,
+  "uz_min_xy": [
+   190.0,
+   -4.65365783675994e-14
+  ],
+  "vm_max": 162.4434629906356,
+  "uz_batentes": {
+   "45": 0.0119219,
+   "135": -0.00432505,
+   "225": -0.00453695,
+   "315": 0.0106007
+  },
+  "reacoes": {
+   "APOIO_SENSOR_1": 146.0761,
+   "APOIO_SENSOR_2": -8.400849,
+   "APOIO_SENSOR_3": -8.534089,
+   "APOIO_SENSOR_4": 145.5389
+  }
+ },
+ {
+  "name": "B_LC1_central_6mm",
+  "arch": "B",
+  "desc": "Botijao centrado, placa 6mm",
+  "t": 6.0,
+  "W": 274.68,
+  "area_carga": 2893.4068339561227,
+  "nos_carga": 1112,
+  "nos": 80406,
+  "elementos": 41125,
+  "uz_min": -0.60775,
+  "uz_min_xy": [
+   -190.0,
+   -3.1423951030224786e-13
+  ],
+  "vm_max": 35.392736795212656,
+  "uz_batentes": {
+   "0": -0.0161031,
+   "90": -0.244539,
+   "180": -0.549964,
+   "240": -0.393231,
+   "300": -0.11882
+  },
+  "reacoes": {
+   "ENGASTE_CELULA": 274.68
+  }
+ },
+ {
+  "name": "B_LC2_excentrico_6mm",
+  "arch": "B",
+  "desc": "Botijao deslocado 25 mm para -X (longe do engaste)",
+  "t": 6.0,
+  "W": 274.68,
+  "area_carga": 2893.4068339561204,
+  "nos_carga": 1112,
+  "nos": 80522,
+  "elementos": 41225,
+  "uz_min": -0.8364,
+  "uz_min_xy": [
+   -165.0,
+   -3.1423951030224786e-13
+  ],
+  "vm_max": 44.380202477642015,
+  "uz_batentes": {
+   "0": 0.0358574,
+   "90": -0.26034,
+   "180": -0.748959,
+   "240": -0.485056,
+   "300": -0.0807673
+  },
+  "reacoes": {
+   "ENGASTE_CELULA": 274.68
+  }
+ },
+ {
+  "name": "B_LC3_arco90_6mm",
+  "arch": "B",
+  "desc": "Apoio parcial: arco de 90 graus no lado oposto ao engaste",
+  "t": 6.0,
+  "W": 274.68,
+  "area_carga": 723.3517084892237,
+  "nos_carga": 277,
+  "nos": 81172,
+  "elementos": 40941,
+  "uz_min": -1.98564,
+  "uz_min_xy": [
+   -190.0,
+   -3.1423951030224786e-13
+  ],
+  "vm_max": 90.58455419813227,
+  "uz_batentes": {
+   "0": 0.147474,
+   "90": -0.195762,
+   "180": -1.77821,
+   "240": -0.830589,
+   "300": 0.128484
+  },
+  "reacoes": {
+   "ENGASTE_CELULA": 274.68
+  }
+ },
+ {
+  "name": "B_LC1_central_3mm",
+  "arch": "B",
+  "desc": "Botijao centrado, placa 3mm",
+  "t": 3.0,
+  "W": 274.68,
+  "area_carga": 2893.4068339561227,
+  "nos_carga": 1112,
+  "nos": 75513,
+  "elementos": 37730,
+  "uz_min": -4.71602,
+  "uz_min_xy": [
+   -189.98358574048424,
+   2.497428515107154
+  ],
+  "vm_max": 117.9075680689751,
+  "uz_batentes": {
+   "0": -0.148358,
+   "90": -1.90549,
+   "180": -4.2641,
+   "240": -3.05176,
+   "300": -0.93751
+  },
+  "reacoes": {
+   "ENGASTE_CELULA": 274.68
+  }
+ }
+]
