@@ -1,8 +1,8 @@
 import { authSessionSchema, type User } from '@arbora/contracts';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { getServerApiBase } from './api-base';
+import { forwardClientIp, getServerApiBase } from './api-base';
 import { buildUrl } from './api-client';
 
 /**
@@ -17,7 +17,10 @@ export async function getServerUser(): Promise<User | null> {
     .join('; ');
 
   const response = await fetch(buildUrl('auth/me', undefined, getServerApiBase()), {
-    headers: { cookie: cookieHeader },
+    headers: {
+      cookie: cookieHeader,
+      ...forwardClientIp((await headers()).get('x-forwarded-for')),
+    },
     cache: 'no-store',
   });
   if (!response.ok) return null;

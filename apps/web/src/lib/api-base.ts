@@ -30,3 +30,20 @@ export function resolveServerApiBase(publicUrl: string, apiOrigin: string | unde
 export function getServerApiBase(): string {
   return resolveServerApiBase(env.NEXT_PUBLIC_API_URL, process.env.API_ORIGIN);
 }
+
+/**
+ * Cabeçalhos pra chamar a API a partir do servidor do web em nome de um usuário.
+ *
+ * Sem isso, toda chamada de middleware/Server Component chega à API como o IP
+ * da machine do web e o rate limit por IP divide o limite entre todos os
+ * usuários. Repassa o `X-Forwarded-For` da requisição original (o cliente e a
+ * borda do Fly do web), que deixa a cadeia vista pela API com o mesmo formato
+ * das chamadas do navegador via proxy do Next — o `TRUST_PROXY_HOPS` da API
+ * (docs/deploy.md) é calibrado pra esse formato.
+ *
+ * Seguro contra forjar o IP daqui: entradas extras que o cliente mandar ficam
+ * à ESQUERDA da cadeia, e a API conta os saltos a partir da direita.
+ */
+export function forwardClientIp(forwardedFor: string | null | undefined): Record<string, string> {
+  return forwardedFor ? { 'x-forwarded-for': forwardedFor } : {};
+}
