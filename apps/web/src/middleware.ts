@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { getServerApiBase } from '@/lib/api-base';
+import { forwardClientIp, getServerApiBase } from '@/lib/api-base';
 
 /**
  * Protege toda rota fora de `/login` e `/recuperar-senha`. Consulta `/auth/me`
@@ -24,7 +24,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   const response = await fetch(`${getServerApiBase()}/auth/me`, {
-    headers: { cookie: request.headers.get('cookie') ?? '' },
+    headers: {
+      cookie: request.headers.get('cookie') ?? '',
+      ...forwardClientIp(request.headers.get('x-forwarded-for')),
+    },
   });
   if (response.ok) return NextResponse.next();
 

@@ -108,6 +108,11 @@ O rate limit da API é por IP (`req.ip`). Atrás do proxy do Fly, sem
 repassa as chamadas do navegador à API (proxy do Next), todo mundo pareceria um
 só cliente (limite de 120 req/min dividido entre todos os usuários).
 
+O web também repassa o `X-Forwarded-For` original nas chamadas que o servidor dele
+faz à API (middleware e Server Components, `forwardClientIp` em
+`apps/web/src/lib/api-base.ts`), para que elas contem no limite de quem navega e
+não todas no IP da machine do web. Medido em staging: cadeia de 4 saltos.
+
 `TRUST_PROXY_HOPS=N` faz o Express ler o IP do cliente do `N`-ésimo item de
 `X-Forwarded-For`, contando da direita. **Contar a mais** deixa o cliente forjar
 o IP; **a menos** devolve o IP de um proxy. Como calibrar: faça uma requisição

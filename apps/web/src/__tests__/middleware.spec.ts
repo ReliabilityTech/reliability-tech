@@ -46,6 +46,30 @@ describe('middleware', () => {
     expect(local.searchParams.get('from')).toBe('/alunos');
   });
 
+  it('repassa o IP do usuário (X-Forwarded-For) pra API, pro rate limit por usuário', async () => {
+    const fetchEspiao = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchEspiao);
+
+    const request = new NextRequest('http://localhost:3000/dashboard', {
+      headers: { cookie: 'arbora_access=valido', 'x-forwarded-for': '203.0.113.7, 2a09:8280:1::1' },
+    });
+    await middleware(request);
+
+    const init = fetchEspiao.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(init.headers['x-forwarded-for']).toBe('203.0.113.7, 2a09:8280:1::1');
+    expect(init.headers.cookie).toBe('arbora_access=valido');
+  });
+
+  it('não inventa X-Forwarded-For quando a requisição não tem', async () => {
+    const fetchEspiao = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchEspiao);
+
+    await middleware(new NextRequest('http://localhost:3000/dashboard'));
+
+    const init = fetchEspiao.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(init.headers).not.toHaveProperty('x-forwarded-for');
+  });
+
   describe('matcher', () => {
     // O Next compila o matcher como path-to-regexp; esse padrão só usa grupo
     // com lookahead, então vale como regex ancorada.

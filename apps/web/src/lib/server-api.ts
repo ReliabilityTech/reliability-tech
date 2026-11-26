@@ -1,8 +1,8 @@
 import { ERROR_CODES } from '@arbora/contracts';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { type z, type ZodTypeAny } from 'zod';
 
-import { getServerApiBase } from './api-base';
+import { forwardClientIp, getServerApiBase } from './api-base';
 import { ApiRequestError, buildUrl, type QueryParams, toApiError } from './api-client';
 
 export type ServerFetchOptions<TSchema extends ZodTypeAny> = {
@@ -33,6 +33,7 @@ export async function serverFetch<TSchema extends ZodTypeAny>(
     headers: {
       Accept: 'application/json',
       cookie: cookieHeader,
+      ...forwardClientIp((await headers()).get('x-forwarded-for')),
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
