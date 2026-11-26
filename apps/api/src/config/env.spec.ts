@@ -32,6 +32,19 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...baseEnv, JWT_SECRET: 'curto' })).toThrow(/JWT_SECRET/);
   });
 
+  it('não confia em nenhum proxy por padrão', () => {
+    expect(validateEnv({ ...baseEnv }).TRUST_PROXY_HOPS).toBe(0);
+  });
+
+  it('converte TRUST_PROXY_HOPS vinda como string para número', () => {
+    expect(validateEnv({ ...baseEnv, TRUST_PROXY_HOPS: '2' }).TRUST_PROXY_HOPS).toBe(2);
+  });
+
+  it('rejeita TRUST_PROXY_HOPS negativo ou fracionário', () => {
+    expect(() => validateEnv({ ...baseEnv, TRUST_PROXY_HOPS: '-1' })).toThrow(/TRUST_PROXY_HOPS/);
+    expect(() => validateEnv({ ...baseEnv, TRUST_PROXY_HOPS: '1.5' })).toThrow(/TRUST_PROXY_HOPS/);
+  });
+
   it('interpreta SWAGGER_ENABLED=false como booleano falso', () => {
     expect(validateEnv({ ...baseEnv, SWAGGER_ENABLED: 'false' }).SWAGGER_ENABLED).toBe(false);
   });
